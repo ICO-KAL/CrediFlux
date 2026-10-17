@@ -1,16 +1,142 @@
-# React + Vite
+# CrediFlux
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+CrediFlux es un sistema de gestión de préstamos diseñado para controlar solicitudes, clientes, montos, plazos y seguimiento de pagos de manera ordenada y segura. La idea principal es ofrecer una solución moderna y escalable para administrar operaciones de crédito dentro de una entidad financiera o negocio que maneje préstamos.
 
-Currently, two official plugins are available:
+Este proyecto se encuentra en desarrollo inicial y combina un frontend con React y un backend en Express con MongoDB para sentar la base de un sistema funcional de administración de préstamos.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Características principales
 
-## React Compiler
+- Gestión de usuarios y autenticación
+- Registro y seguimiento de solicitudes de préstamo
+- Control de clientes y montos solicitados
+- Administración de plazos y condiciones de crédito
+- Conexión a MongoDB Atlas con Mongoose
+- API REST con Express
+- Interfaz con React + Vite
+- Variables de entorno para credenciales y configuración
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tecnologías utilizadas
 
-## Expanding the Oxlint configuration
+- React
+- Vite
+- JavaScript
+- Express
+- MongoDB
+- Mongoose
+- JWT
+- bcrypt
+- dotenv
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 📁 Estructura del proyecto
+
+```bash
+prestamoGestions/
+├── src/
+│   ├── backend/
+│   │   ├── app.js
+│   │   ├── config/
+│   │   │   └── credifluxDB.js
+│   │   ├── routes/
+│   │   │   └── login.js
+│   │   └── schemes/
+│   │       └── user.js
+│   ├── App.jsx
+│   ├── main.jsx
+│   ├── App.css
+│   └── index.css
+├── .env
+├── .gitignore
+├── index.html
+├── package.json
+├── package-lock.json
+├── vite.config.js
+└── README.md
+```
+
+## 🚀 Requisitos previos
+
+Antes de ejecutar el proyecto asegúrate de tener instalado:
+
+- Node.js 18 o superior
+- npm o yarn
+- MongoDB Atlas o una instancia local de MongoDB
+
+## ⚙️ Instalación
+
+1. Clona el repositorio:
+
+```bash
+git clone <url-del-repositorio>
+cd prestamoGestions
+```
+
+2. Instala las dependencias:
+
+```bash
+npm install
+```
+
+3. Configura las variables de entorno en un archivo `.env`:
+
+```env
+name=tu_usuario_mongo
+passwoard=tu_contraseña_mongo
+JSON_WEB_TOKEN=tu_jwt_secreto
+PORT=3000
+```
+
+4. Inicia la aplicación en modo desarrollo:
+
+```bash
+npm run dev
+```
+
+5. Si deseas levantar el backend de Express manualmente:
+
+```bash
+node src/backend/app.js
+```
+
+## 🧪 Scripts disponibles
+
+En el archivo `package.json` se incluyen los siguientes scripts:
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+```
+
+## 🔐 Seguridad
+
+El proyecto ya contempla el uso de:
+
+- `bcrypt` para manejo de contraseñas
+- `jsonwebtoken` para autenticación
+- variables de entorno para no exponer credenciales sensibles
+
+## 📌 Estado del proyecto
+
+CrediFlux está en fase inicial de desarrollo. Actualmente se encuentra estructurado con la base del frontend y el backend, además de la conexión a MongoDB. Las funcionalidades principales de autenticación y gestión de préstamos se están desarrollando progresivamente.
+
+## 🧭 Objetivo del proyecto
+
+Brindar una herramienta útil para la administración de préstamos con una experiencia clara para usuarios y administradores, optimizando procesos que normalmente se manejan de forma manual.
+
+## 🤝 Contribución
+
+Las contribuciones son bienvenidas. Si deseas colaborar:
+
+1. Haz un fork del proyecto
+2. Crea una rama para tu funcionalidad
+3. Realiza tus cambios
+4. Envía un pull request
+
+## 📄 Licencia
+
+Este proyecto está bajo una licencia de uso personal o educativa. Si deseas usarlo en producción, es recomendable definir una licencia formal según el tipo de implementación.
+
+## 👤 Autor
+
+Proyecto desarrollado por el autor del repositorio actual.
