@@ -135,7 +135,19 @@ export async function actualizarTarjeta(req,res){
 
 export async function eliminarTarjeta(req,res){
     try{
-        
+        const {clienteId, numeroEnmascarado} = req.body;
+        if(!mongoose.Types.ObjectId.isValid(clienteId)){
+            return res.status(401).json({message: "no se encontro la tarjeta del clienteID"});
+        }
+        if(numeroEnmascarado !== numeroEnmascarado){
+            return res.status(401).json({message: "tarjeta no parecida"});
+        }
+        const eliminarTarjeta = await tarjetaCredito.eliminarTarjeta_credito({
+            clienteId,
+            numeroEnmascarado
+        });
+
+        res.status(200).json({message: "tarjeta eliminada",eliminar: eliminarTarjeta});
     }
     catch(e){
         console.log("Error al eliminar la tarjeta",e);

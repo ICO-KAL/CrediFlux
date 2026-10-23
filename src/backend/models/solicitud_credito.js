@@ -14,10 +14,39 @@ const getIdSolicitudCredito = async (id) => {
     return await solicitudCredito.findOne({ _id: new mongoose.Types.ObjectId(id) });
 };
 const actualizarSolicitudCredito = async (id, datos) => {
-    return await solicitudCredito.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, datos, { new: true });
+    return await solicitudCredito.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        datos,
+        { new: true, runValidators: true }
+    );
+};
+const cambiarEstadoSiPendiente = async (id, estado) => {
+    return await solicitudCredito.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id), estado: "pendiente" },
+        { $set: { estado } },
+        { new: true, runValidators: true }
+    );
 };
 const allSolicitudCredito = async () => {
     return await solicitudCredito.find();
 };
 
-export default { getSolicitudCredito, crearSolicitudCredito, eliminarSolicitudCredito, getIdSolicitudCredito, actualizarSolicitudCredito, allSolicitudCredito };
+const listarSolicitudesCredito = async (filtro, { page, limit }) => {
+    const skip = (page - 1) * limit;
+    const [solicitudes, total] = await Promise.all([
+        solicitudCredito.find(filtro).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        solicitudCredito.countDocuments(filtro)
+    ]);
+    return { solicitudes, total };
+};
+
+export default {
+    getSolicitudCredito,
+    crearSolicitudCredito,
+    eliminarSolicitudCredito,
+    getIdSolicitudCredito,
+    actualizarSolicitudCredito,
+    cambiarEstadoSiPendiente,
+    allSolicitudCredito,
+    listarSolicitudesCredito
+};

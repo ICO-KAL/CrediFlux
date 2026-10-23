@@ -29,6 +29,12 @@ const allUsuario = async () => {
     return await usuarios.find();
 };
 
+const contarUsuariosConRol = async (rolId) => {
+    return await usuarios.countDocuments({
+        roles: new mongoose.Types.ObjectId(rolId)
+    });
+};
+
 export default{
     getUsuario,
     getUsuarioParaLogin,
@@ -36,5 +42,6 @@ export default{
     eliminarUsuario,
     getIdUsuario,
     actualizarUsuario,
-    allUsuario
+    allUsuario,
+    contarUsuariosConRol
 };
