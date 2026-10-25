@@ -1,5 +1,5 @@
 import express from 'express';
-import 'dotenv';
+import 'dotenv/config';
 import authRoutes from './routes/login.js';
 import { credifluxdb } from './config/credifluxDB.js';
 

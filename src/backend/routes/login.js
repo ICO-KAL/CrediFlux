@@ -1,12 +1,12 @@
 import express from 'express';
-import {register,login} from '../controller/usuario_controller';
-import { verificarToken } from '../helpers/autentic';
+import {register,login} from '../controller/usuario_controller.js';
+import { verificarToken } from '../helpers/autentic.js';
 import {
     cerrarOtrasSesiones,
     cerrarSesion,
     obtenerMisSesiones,
     renovarSesion
-} from '../controller/sesiones_controller';
+} from '../controller/sesiones_controller.js';
 
 const router = express.Router();
 

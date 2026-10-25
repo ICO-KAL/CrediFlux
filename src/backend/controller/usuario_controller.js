@@ -1,6 +1,6 @@
-import usuarioModel from "../models/usuario";
+import usuarioModel from "../models/usuario.js";
 import bcrypt from 'bcryptjs';
-import { crearSesionAutenticada } from './sesiones_controller';
+import { crearSesionAutenticada } from './sesiones_controller.js';
 
 export async function register(req, res) {
     try {

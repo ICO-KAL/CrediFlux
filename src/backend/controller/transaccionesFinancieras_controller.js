@@ -1,136 +1,70 @@
-import mongoose, { mongo } from "mongoose";
-import transaccion from "../models/transaccion_financiera";
+import mongoose from 'mongoose';
+import transaccion from '../models/transaccion_financiera.js';
+import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
 
-
-export async function crearTransacciones(req,res){
-    try{
-        const {referenciaId,tipoTransaccion, monto, moneda} = req.body;
-
-        if(!referenciaId) return res.status(401).json({message: "se requiere referenciaId"});
-
-        if(!mongoose.Types.ObjectId.isValid(referenciaId)){
-            return res.status(401).json({message: "el formato del id no es valido"});
+export async function obtenerTransacciones(req, res) {
+    try {
+        const paginacion = validarPaginacion(req.query);
+        if (!paginacion) return res.status(400).json({ message: 'Paginación inválida' });
+        const filtro = {};
+        if (req.query.referenciaId !== undefined) {
+            if (!esObjectId(req.query.referenciaId)) return res.status(400).json({ message: 'ID de referencia inválido' });
+            filtro.referenciaId = req.query.referenciaId;
         }
-
-        if(!tipoTransaccion || !monto || !!moneda){
-            return res.status(401).json({message: "no dejes el apartado vacio llenar el apartado"});
-        }
-
-        if(!monto || monto <= 0) return res.status(401).json({message: "debes tener dinero para hacer una transaccion"});
-        if(!tipoTransaccion) return res.status(401).json({message: "necesitas colocar el tipo de transaccion"});
-
-        const crearTransaccionesFinanciera = await transaccion.crearTransaccionFinanciera({
-            referenciaId,
-            tipoTransaccion,
-            monto,
-            moneda
+        if (req.query.tipoTransaccion !== undefined) filtro.tipoTransaccion = req.query.tipoTransaccion;
+        const [transacciones, total] = await Promise.all([
+            mongoose.model('TransaccionFinanciera').find(filtro)
+                .sort({ createdAt: -1 }).skip(paginacion.skip).limit(paginacion.limit),
+            mongoose.model('TransaccionFinanciera').countDocuments(filtro)
+        ]);
+        return res.status(200).json({
+            transacciones,
+            paginacion: { page: paginacion.page, limit: paginacion.limit, total }
         });
-        res.status(202).json({message: "transaccion creada", crearTransacciones: crearTransaccionesFinanciera});
-    }
-    catch(e){
-        console.log("no se pudo crear la transaccion",e);
-        return res.status(500).json({message:"Error en la transaccion", Error: e});
+    } catch (error) {
+        return responderError(res, error, 'Error al listar transacciones financieras');
     }
 }
 
-export async function obtenerTransacciones(req,res){
-    try{
-        const {referenciaId,tipoTransaccion} = req.body;
-        if(!referenciaId || !tipoTransaccion) return res.status(401).json({message: "no se encontro la transaccion"});
+export async function obtenerTransaccionesPorId(req, res) {
+    try {
+        const { id } = req.params;
+        if (!esObjectId(id)) return res.status(400).json({ message: 'ID de transacción inválido' });
+        const transaccionEncontrada = await transaccion.getIdTransaccionFinanciera(id);
+        if (!transaccionEncontrada) return res.status(404).json({ message: 'Transacción no encontrada' });
+        return res.status(200).json({ transaccion: transaccionEncontrada });
+    } catch (error) {
+        return responderError(res, error, 'Error al obtener la transacción financiera');
+    }
+}
 
-        const encontrarTransacciones = await transaccion.getTransaccionFinanciera({
-            referenciaId,
-            tipoTransaccion,
+export async function crearTransacciones(req, res) {
+    try {
+        const { referenciaId, tipoTransaccion, monto, moneda } = req.body ?? {};
+        if (!esObjectId(referenciaId)) return res.status(400).json({ message: 'ID de referencia inválido' });
+        if (typeof tipoTransaccion !== 'string' || !tipoTransaccion.trim() || tipoTransaccion.length > 100) {
+            return res.status(400).json({ message: 'Tipo de transacción inválido' });
+        }
+        if (typeof monto !== 'number' || !Number.isFinite(monto) || monto <= 0) {
+            return res.status(400).json({ message: 'El monto debe ser mayor que cero' });
+        }
+        if (moneda !== undefined &&
+            (typeof moneda !== 'string' || !/^[A-Za-z]{3}$/.test(moneda.trim()))) {
+            return res.status(400).json({ message: 'La moneda debe usar un código de tres letras' });
+        }
+        const creada = await transaccion.crearTransaccionFinanciera({
+            referenciaId, tipoTransaccion: tipoTransaccion.trim(), monto, moneda
         });
-        if(!encontrarTransacciones) return res.status(401).json({message: "no se encontro la transaccion"});
-        res.status(202).json({message: "se encontro la transaccion", transaccion: encontrarTransacciones});
-    }
-    catch(e){
-        console.log("Error al buscar tu transaccion",e);
-        res.status(500).json({Error: e});
+        return res.status(201).json({ message: 'Transacción registrada', transaccion: creada });
+    } catch (error) {
+        return responderError(res, error, 'Error al registrar la transacción');
     }
 }
 
-export async function obtenerTransaccionesPorId(req,res) {
-    try{
-        const {referenciaId} = req.params.id;
-        if(!mongoose.Types.ObjectId.isValid(referenciaId)){
-          return res.status(401).json({message: "no se encontro el id de la transaccion"});
-        }
-
-        const buscarTransaccionId = await transaccion.getIdTransaccionFinanciera({referenciaId});
-        res.status(202).json({message: "transaccion obtenida",buscarTransaccionId: buscarTransaccionId});
-
-    }catch(e){
-        console.log("Error no se encontro la transaccion",e);
-        return res.status(500).json({message: "no se encontro la transaccion"});
-    }
+export async function actualizarTransaccion(req, res) {
+    return res.status(405).json({ message: 'Las transacciones financieras son inmutables; registra una reversión' });
 }
 
-export async function actualizarTransaccion(req,res){
-    try{
-        const id = req.params;
-        const {referenciaId,tipoTransaccion, monto, moneda} = req.body;
-
-        const datoActualizar = {};
-        if(referenciaId !== undefined){
-            if(!mongoose.Types.ObjectId.isValid(referenciaId)){
-                return res.status(401).json({message: "el formato de referencia no es valida"});
-            }
-            datoActualizar.referenciaId = referenciaId;
-        }
-
-        if(tipoTransaccion !== undefined){
-            datoActualizar.tipoTransaccion = tipoTransaccion;
-        }
-        if(monto !== undefined){
-            if(typeof monto !== 'number' || monto <= 0){
-                return res.status(401).json({message: "el monto no puede dar 0 tiene que ser superior"});
-            }
-            datoActualizar.monto = monto;
-        }
-        if(moneda !== undefined){
-            datoActualizar.moneda;
-        }
-       
-       const actualizarTransaccion =
-         await transaccion.actualizarTransaccionFinanciera(
-           id,
-           { $set: datoActualizar }
-         );
-    
-       if(!actualizarTransaccion) return res.status(401).json({message: "tienes que poner los apartados necesarios"});
-       res.status(202).json({
-        message: "transaccion actualizada",
-        actualizar: actualizarTransaccion
-       });
-    }
-    catch(e){
-        console.log("Error no se pudo actualizar",e);
-        return res.status(500).json({Error: e});
-    }
-}
-
-export async function eliminarTransaccion(req,res){
-    try{
-        const {referenciaId,tipoTransaccion} = req.body;
-        if(!referenciaId || !tipoTransaccion) return res.status(401).json({message: "transaccion no encontrada"});
-        
-        if(!mongoose.Types.ObjectId.isValid(referenciaId)){
-            return res.status(401).json({message: "no se encontro la transaccion"});
-        }
-        
-        const eliminarTransaccion = await transaccion.eliminarTransaccionFinanciera({
-            referenciaId: referenciaId,
-            tipoTransaccion: tipoTransaccion
-        });
-
-        if(!eliminarTransaccion) return res.status(401).json({message: "Error al eliminar la transaccion"});
-
-        res.status(202).json({message:"eliminacion de transaccion completada", Eliminar: eliminarTransaccion});
-    }
-    catch(e){
-        console.log("Error al eliminar",e);
-        return res.status(500).json({Error: e});
-    }
+export async function eliminarTransaccion(req, res) {
+    return res.status(405).json({ message: 'Las transacciones financieras no se eliminan; registra una reversión' });
 }

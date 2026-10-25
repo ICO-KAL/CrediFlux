@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import mongoose from 'mongoose';
-import sesiones from '../models/sesion';
-import usuarioModel from '../models/usuario';
-import { userToken } from '../helpers/autentic';
+import sesiones from '../models/sesion.js';
+import usuarioModel from '../models/usuario.js';
+import { userToken } from '../helpers/autentic.js';
 
 const duracionSesionMs = 30 * 24 * 60 * 60 * 1000;
 

@@ -1,7 +1,8 @@
 import jsonwebtoken from 'jsonwebtoken';
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import sesiones from '../models/sesion';
+import sesiones from '../models/sesion.js';
+import usuarioModel from '../models/usuario.js';
 
 export function userToken(payload) {
     return jsonwebtoken.sign(payload, process.env.JSON_WEB_TOKEN, {
@@ -43,4 +44,33 @@ export async function verificarToken(req, res, next) {
         console.error('Error al verificar la sesión', error);
         return res.status(500).json({ message: 'No se pudo verificar la sesión' });
     }
+}
+
+export function exigirPermiso(modulo, nombreAccion) {
+    return async function verificarPermiso(req, res, next) {
+        try {
+            const usuarioId = req.usuario?.id;
+            if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+                return res.status(401).json({ message: 'Se requiere una sesión autenticada' });
+            }
+
+            const usuario = await usuarioModel.getUsuarioConPermisos(usuarioId);
+            if (!usuario || !usuario.activo) {
+                return res.status(401).json({ message: 'La cuenta no está disponible' });
+            }
+
+            const autorizado = usuario.roles.some((rol) =>
+                rol?.permisos?.some((permiso) =>
+                    permiso.modulo === modulo && permiso.nombreAccion === nombreAccion
+                )
+            );
+            if (!autorizado) {
+                return res.status(403).json({ message: 'No tienes permiso para realizar esta acción' });
+            }
+            return next();
+        } catch (error) {
+            console.error('Error al verificar permisos', error);
+            return res.status(500).json({ message: 'No se pudieron verificar los permisos' });
+        }
+    };
 }

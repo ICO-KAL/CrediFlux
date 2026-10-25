@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import consentimiento from "../schemes/consentimientos";
+import consentimiento from "../schemes/consentimientos.js";
 
 const getConsentimiento = async (filtro) => {
     return await consentimiento.findOne(filtro);

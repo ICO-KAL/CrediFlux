@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
-import solicitudesCredito from '../models/solicitud_credito';
-import clientes from '../models/cliente';
-import productosCredito from '../models/producto_credito';
+import solicitudesCredito from '../models/solicitud_credito.js';
+import clientes from '../models/cliente.js';
+import productosCredito from '../models/producto_credito.js';
+import { esObjectId as esObjectIdValido } from '../helpers/controlador.js';
 
-const estadosSolicitud = ['pendiente', 'en_revision', 'aprobada', 'rechazada'];
+const estadosSolicitud = ['pendiente', 'en_revision', 'aprobada', 'rechazada', 'cancelada'];
 const limiteMaximoPagina = 100;
 
 function responderError(res, error, mensaje) { // eliminar
@@ -43,6 +44,7 @@ export async function crearSolicitudCredito(req, res) {
             productosCredito.getIdProductoCredito(productoCreditoId)
         ]);
         if (!cliente) return res.status(404).json({ message: 'No se encontró el cliente' });
+        if (cliente.estado !== 'activo') return res.status(409).json({ message: 'El cliente no está habilitado para solicitar crédito' });
         if (!producto) return res.status(404).json({ message: 'No se encontró el producto de crédito' });
 
         const errorLimites = validarImporteYPlazo(producto, montoSolicitado, plazoSolicitadoMeses);

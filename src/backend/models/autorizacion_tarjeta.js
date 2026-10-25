@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import autorizacionTarjeta from "../schemes/autorizaciones_tarjeta";
+import autorizacionTarjeta from "../schemes/autorizaciones_tarjeta.js";
 
 const getAutorizacionTarjeta = async (filtro) => {
     return await autorizacionTarjeta.findOne(filtro);

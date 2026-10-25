@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import rol from "../schemes/roles";
+import rol from "../schemes/roles.js";
 
 const getRol = async (filtro) => {
     return await rol.findOne(filtro);

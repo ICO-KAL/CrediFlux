@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import tarjetasCredito from "../schemes/tarjetas_credito";
+import tarjetasCredito from "../schemes/tarjetas_credito.js";
 
 const getTarjeta_credito = async (id) => {
     return await tarjetasCredito.findOne({ _id: new mongoose.Types.ObjectId(id) });
@@ -14,7 +14,11 @@ const eliminarTarjeta_credito = async (id) => {
 };
 
 const actualizarTarjeta_credito = async (id, tarjetaCredito) => {
-    return await tarjetasCredito.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, tarjetaCredito, { new: true });
+    return await tarjetasCredito.findOneAndUpdate(
+        { _id: new mongoose.Types.ObjectId(id) },
+        tarjetaCredito,
+        { new: true, runValidators: true }
+    );
 };
 
 const allTarjeta_credito = async () => {

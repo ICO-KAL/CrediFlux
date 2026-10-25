@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import transaccionFinanciera from "../schemes/transacciones_financieras";
+import transaccionFinanciera from "../schemes/transacciones_financieras.js";
 
 const getTransaccionFinanciera = async (filtro) => {
     return await transaccionFinanciera.findOne(filtro);

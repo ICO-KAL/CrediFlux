@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import sesion from "../schemes/sesiones";
+import sesion from "../schemes/sesiones.js";
 
 const getSesion = async (filtro) => {
     return await sesion.findOne(filtro);

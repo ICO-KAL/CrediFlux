@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "bootstrap:admin": "node src/backend/scripts/bootstrapAdmin.js",
     "preview": "vite preview"
   },
   "dependencies": {

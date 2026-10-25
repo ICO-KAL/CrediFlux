@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import planAmortizacion from "../schemes/planes_amortizacion";
+import planAmortizacion from "../schemes/planes_amortizacion.js";
 
 const getPlanAmortizacion = async (filtro) => {
     return await planAmortizacion.findOne(filtro);

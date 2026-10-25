@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
-import rol from '../models/rol';
-import permisoModel from '../models/permiso';
-import usuarioModel from '../models/usuario';
+import rol from '../models/rol.js';
+import permisoModel from '../models/permiso.js';
+import usuarioModel from '../models/usuario.js';
 
 async function validarPermisos(permisos) {
     if (!Array.isArray(permisos) || permisos.some((id) => !objectIdValido(id))) {
