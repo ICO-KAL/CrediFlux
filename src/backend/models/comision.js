@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import comision from "../schemes/comisiones";
+import comision from "../schemes/comisiones.js";
 
 const getComision = async (filtro) => {
     return await comision.findOne(filtro);

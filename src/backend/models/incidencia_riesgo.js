@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import incidenciaRiesgo from "../schemes/incidencias_riesgo";
+import incidenciaRiesgo from "../schemes/incidencias_riesgo.js";
 
 const getIncidenciaRiesgo = async (filtro) => {
     return await incidenciaRiesgo.findOne(filtro);

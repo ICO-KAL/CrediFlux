@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import eventoOutbox from "../schemes/eventos_outbox";
+import eventoOutbox from "../schemes/eventos_outbox.js";
 
 const getEventoOutbox = async (filtro) => {
     return await eventoOutbox.findOne(filtro);

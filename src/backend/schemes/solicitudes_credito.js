@@ -7,7 +7,7 @@ const solicitudCreditoSchema = new mongoose.Schema({
   plazoSolicitadoMeses: { type: Number, required: true, min: 1, validate: Number.isInteger },
   estado: {
     type: String,
-    enum: ['pendiente', 'en_revision', 'aprobada', 'rechazada'],
+    enum: ['pendiente', 'en_revision', 'aprobada', 'rechazada', 'cancelada'],
     default: 'pendiente',
     required: true
   }

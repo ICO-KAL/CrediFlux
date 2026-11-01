@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import creadiflux from "../schemes/creadiflux";
+import creadiflux from "../schemes/creadiflux.js";
 
 const getCreadiflux = async (filtro) => {
     return await creadiflux.findOne(filtro);

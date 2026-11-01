@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import movimientoTarjeta from "../schemes/movimientos_tarjeta";
+import movimientoTarjeta from "../schemes/movimientos_tarjeta.js";
 
 const getMovimientoTarjeta = async (filtro) => {
     return await movimientoTarjeta.findOne(filtro);

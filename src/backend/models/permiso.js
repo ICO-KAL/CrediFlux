@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import permiso from "../schemes/permisos";
+import permiso from "../schemes/permisos.js";
 
 const getPermiso = async (filtro) => {
     return await permiso.findOne(filtro);

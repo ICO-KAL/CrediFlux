@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import movimientoContable from "../schemes/movimientos_contables";
+import movimientoContable from "../schemes/movimientos_contables.js";
 
 const getMovimientoContable = async (filtro) => {
     return await movimientoContable.findOne(filtro);

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import asignacionPago from "../schemes/asignaciones_pago";
+import asignacionPago from "../schemes/asignaciones_pago.js";
 
 const getAsignacionPago = async (filtro) => {
     return await asignacionPago.findOne(filtro);

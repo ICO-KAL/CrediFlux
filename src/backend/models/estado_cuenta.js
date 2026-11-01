@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import estadoCuenta from "../schemes/estados_cuenta";
+import estadoCuenta from "../schemes/estados_cuenta.js";
 
 const getEstadoCuenta = async (filtro) => {
     return await estadoCuenta.findOne(filtro);

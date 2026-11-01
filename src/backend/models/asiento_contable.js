@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import asientoContable from "../schemes/asientos_contables";
+import asientoContable from "../schemes/asientos_contables.js";
 
 const getAsientoContable = async (filtro) => {
     return await asientoContable.findOne(filtro);
