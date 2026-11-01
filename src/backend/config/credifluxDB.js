@@ -5,11 +5,16 @@ import dotenv from'dotenv';
 export async function credifluxdb(){
     try{
        dotenv.config({path: path.resolve(import.meta.dirname, '../../../.env') });
-       await mongoose.connect(`mongodb+srv://${process.env.name}:${process.env.passwoard}@crediflux.rryk9jr.mongodb.net/`);
+       const username = encodeURIComponent(process.env.name ?? '');
+       const password = encodeURIComponent(process.env.passwoard ?? '');
+       await mongoose.connect(
+           `mongodb+srv://${username}:${password}@crediflux.rryk9jr.mongodb.net/`,
+           { serverSelectionTimeoutMS: 10000 }
+       );
        console.log("base de datos conectada");
     }
-    catch(e){
-        throw new Error('No se pudo conectar a MongoDB', { cause: e });
+    catch(error){
+        throw new Error('No se pudo conectar a MongoDB', { cause: error });
     }
 }
 

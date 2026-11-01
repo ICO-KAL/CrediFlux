@@ -20,3 +20,5 @@ router.post('/sessions/logout-others', verificarToken, cerrarOtrasSesiones);
 router.get('/verify', verificarToken, (req, res) => {
     return res.status(200).json({ usuario: req.usuario });
 });
+
+export default router;

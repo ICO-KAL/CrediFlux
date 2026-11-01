@@ -18,6 +18,17 @@ async function iniciarServidor() {
     });
 }
 
+const desconectar = async () => {
+    try {
+        await mongoose.disconnect();
+    } catch (error) {
+        console.log('Error al desconectar de MongoDB:', error);
+
+    }
+}
+
+
+
 iniciarServidor().catch(() => {
     console.error('El servidor no pudo iniciar porque MongoDB no está disponible');
     process.exitCode = 1;
