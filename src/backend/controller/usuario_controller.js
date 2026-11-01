@@ -1,6 +1,6 @@
-import usuarioModel from "../models/usuario";
+import usuarioModel from "../models/usuario.js";
 import bcrypt from 'bcryptjs';
-import {userToken} from '../helpers/autentic';
+import { crearSesionAutenticada } from './sesiones_controller.js';
 
 export async function register(req, res) {
     try {
@@ -49,7 +49,7 @@ export async function login(req, res) {
             return res.status(403).json({ message: "La cuenta está desactivada" });
         }
 
-        const token = userToken({ id: usuario.id, email: usuario.email });
+        const { token, tokenRefresh, expiraEn } = await crearSesionAutenticada(usuario, req);
         return res.status(200).json({
             message: "Inicio de sesión correcto",
             usuario: {
@@ -58,7 +58,9 @@ export async function login(req, res) {
                 email: usuario.email,
                 activo: usuario.activo
             },
-            token
+            token,
+            tokenRefresh,
+            expiraEn
         });
     } catch (error) {
         console.error("Error al iniciar sesión", error);

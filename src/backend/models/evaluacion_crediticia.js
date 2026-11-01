@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import evaluacionCrediticia from "../schemes/evaluaciones_crediticias";
+import evaluacionCrediticia from "../schemes/evaluaciones_crediticias.js";
 
 const getEvaluacionCrediticia = async (filtro) => {
     return await evaluacionCrediticia.findOne(filtro);

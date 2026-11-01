@@ -20,3 +20,5 @@ const productoCreditoSchema = new mongoose.Schema({
 
 export default mongoose.models.ProductoCredito
   || mongoose.model('ProductoCredito', productoCreditoSchema);
+
+  

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import cuentaCredito from "../schemes/cuentas_credito";
+import cuentaCredito from "../schemes/cuentas_credito.js";
 
 const getCuentaCredito = async (filtro) => {
     return await cuentaCredito.findOne(filtro);

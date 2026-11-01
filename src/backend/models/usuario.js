@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import usuarios from "../schemes/usuarios";
+import usuarios from "../schemes/usuarios.js";
 
 const getUsuario = async (usuario) => {
     return await usuarios.findOne(usuario);
@@ -29,6 +29,19 @@ const allUsuario = async () => {
     return await usuarios.find();
 };
 
+const contarUsuariosConRol = async (rolId) => {
+    return await usuarios.countDocuments({
+        roles: new mongoose.Types.ObjectId(rolId)
+    });
+};
+
+const getUsuarioConPermisos = async (id) => {
+    return await usuarios.findById(id).populate({
+        path: "roles",
+        populate: { path: "permisos" }
+    });
+};
+
 export default{
     getUsuario,
     getUsuarioParaLogin,
@@ -36,5 +49,7 @@ export default{
     eliminarUsuario,
     getIdUsuario,
     actualizarUsuario,
-    allUsuario
+    allUsuario,
+    contarUsuariosConRol,
+    getUsuarioConPermisos
 };

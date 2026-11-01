@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import pago from "../schemes/pagos";
+import pago from "../schemes/pagos.js";
 
 const getPago = async (filtro) => {
     return await pago.findOne(filtro);

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import cuentaContable from "../schemes/cuentas_contables";
+import cuentaContable from "../schemes/cuentas_contables.js";
 
 const getCuentaContable = async (filtro) => {
     return await cuentaContable.findOne(filtro);

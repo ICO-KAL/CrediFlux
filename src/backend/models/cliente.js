@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import cliente from "../schemes/clientes";
+import cliente from "../schemes/clientes.js";
 
 const getCliente = async (filtro) => {
     return await cliente.findOne(filtro);

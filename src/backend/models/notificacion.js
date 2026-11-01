@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import notificacion from "../schemes/notificaciones";
+import notificacion from "../schemes/notificaciones.js";
 
 const getNotificacion = async (filtro) => {
     return await notificacion.findOne(filtro);

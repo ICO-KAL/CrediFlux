@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import desembolso from "../schemes/desembolsos";
+import desembolso from "../schemes/desembolsos.js";
 
 const getDesembolso = async (filtro) => {
     return await desembolso.findOne(filtro);

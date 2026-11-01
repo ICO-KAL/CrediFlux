@@ -1,4 +1,4 @@
-import mongoose, { mongo } from 'mongoose';
+import mongoose from 'mongoose';
 import path from 'path';
 import dotenv from'dotenv';
 
@@ -9,15 +9,15 @@ export async function credifluxdb(){
        console.log("base de datos conectada");
     }
     catch(e){
-        console.log('Error de conexion',e);
+        throw new Error('No se pudo conectar a MongoDB', { cause: e });
     }
 }
 
 export async function disconnectCredifluxdb(){
     try{
-       await mongoose.disconnect(`mongodb+srv://${process.env.name}:${process.env.passwoard}@crediflux.rryk9jr.mongodb.net/`);
+       await mongoose.disconnect();
        console.log("base de datos desconectada");
-    }catch(e){
-        console.log('Error al desconectar la base de datos');
+    }catch(error){
+        throw new Error('No se pudo desconectar de MongoDB', { cause: error });
     }
 }

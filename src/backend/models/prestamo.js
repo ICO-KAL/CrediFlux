@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import prestamo from "../schemes/prestamos";
+import prestamo from "../schemes/prestamos.js";
 
 const getPrestamo = async (filtro) => {
     return await prestamo.findOne(filtro);

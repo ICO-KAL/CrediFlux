@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import claveIdempotencia from "../schemes/claves_idempotencia";
+import claveIdempotencia from "../schemes/claves_idempotencia.js";
 
 const getClaveIdempotencia = async (filtro) => {
     return await claveIdempotencia.findOne(filtro);

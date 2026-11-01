@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import cuota from "../schemes/cuotas";
+import cuota from "../schemes/cuotas.js";
 
 const getCuota = async (filtro) => {
     return await cuota.findOne(filtro);

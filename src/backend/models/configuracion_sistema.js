@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import configuracionSistema from "../schemes/configuracion_sistema";
+import configuracionSistema from "../schemes/configuracion_sistema.js";
 
 const getConfiguracionSistema = async (filtro) => {
     return await configuracionSistema.findOne(filtro);

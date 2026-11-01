@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import auditoria from "../schemes/auditoria";
+import auditoria from "../schemes/auditoria.js";
 
 const getAuditoria = async (filtro) => {
     return await auditoria.findOne(filtro);
