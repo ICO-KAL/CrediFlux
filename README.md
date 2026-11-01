@@ -76,26 +76,33 @@ cd prestamoGestions
 npm install
 ```
 
-3. Configura las variables de entorno en un archivo `.env`:
+3. Copia `.env.example` a `.env` y completa tus credenciales locales. No compartas ni subas `.env`.
 
 ```env
 name=tu_usuario_mongo
-passwoard=tu_contraseña_mongo
-JSON_WEB_TOKEN=tu_jwt_secreto
+passwoard=tu_password_mongo
+JSON_WEB_TOKEN=define_un_secreto_largo_y_aleatorio
 PORT=3000
+FRONTEND_URL=http://localhost:5173,http://127.0.0.1:5173
+VITE_API_URL=/auth
 ```
 
-4. Inicia la aplicación en modo desarrollo:
+4. Inicia el frontend y la API en desarrollo:
 
 ```bash
+npm run dev:full
+```
+
+También puedes iniciar cada servicio en una terminal separada:
+
+```bash
+npm run dev:api
 npm run dev
 ```
 
-5. Si deseas levantar el backend de Express manualmente:
+Vite reenvía `/auth` al backend en `http://127.0.0.1:3000`. Para desplegar el frontend y la API en dominios distintos, configura `VITE_API_URL` con la URL base de autenticación y `FRONTEND_URL` con el origen del frontend permitido por CORS.
 
-```bash
-node src/backend/app.js
-```
+El registro utiliza nombre de usuario, correo y contraseña. El frontend envía la contraseña al endpoint de autenticación por HTTPS en producción; el backend la cifra con bcrypt antes de guardarla. El inicio de sesión devuelve tokens de sesión, que el navegador mantiene en memoria y en `sessionStorage`; si se marca «Mantener mi sesión iniciada», se guardan en `localStorage`. El backend renueva las sesiones al restaurarlas.
 
 ## 🧪 Scripts disponibles
 

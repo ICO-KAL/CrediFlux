@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import LoginForm from './components/LoginForm.jsx'
 import RegisterModal from './components/RegisterModal.jsx'
 import Toast from './components/Toast.jsx'
@@ -6,49 +6,166 @@ import GrowthChart from './animation/GrowthChart.jsx'
 import Entrance from './animation/Entrance.jsx'
 import RegisterModalAnimation from './animation/RegisterModalAnimation.jsx'
 import ToastAnimation from './animation/ToastAnimation.jsx'
+import {
+  AuthApiError,
+  loginWithApi,
+  logoutWithApi,
+  refreshWithApi,
+  registerWithApi,
+  verifyWithApi,
+} from './services/authApi.js'
+import {
+  clearStoredSession,
+  readStoredSession,
+  saveStoredSession,
+} from './services/sessionStorage.js'
 
 function App() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
-  const [users, setUsers] = useState([])
   const [toast, setToast] = useState(null)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginSuccess, setLoginSuccess] = useState(false)
+  const [rememberSession, setRememberSession] = useState(false)
+  const [session, setSession] = useState(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
 
-  const showToast = (message, type = 'error') => {
+  const showToast = useCallback((message, type = 'error') => {
     setToast({ message, type, id: Date.now() })
-  }
+  }, [])
 
-  const registerUser = (user) => {
-    const email = user.email.trim().toLowerCase()
+  useEffect(() => {
+    let active = true
 
-    if (users.some((existingUser) => existingUser.email === email)) {
-      showToast('Este usuario ya existe. Intenta iniciar sesión.', 'error')
-      return false
+    const restoreSession = async () => {
+      let storedSession
+      try {
+        storedSession = readStoredSession()
+      } catch (error) {
+        if (active) showToast(error.message)
+        return
+      }
+
+      if (!storedSession) return
+
+      try {
+        let restoredSession = storedSession
+        try {
+          await verifyWithApi(storedSession.token)
+        } catch (error) {
+          if (!(error instanceof AuthApiError) || error.status !== 401) throw error
+
+          const refreshedSession = await refreshWithApi(storedSession.tokenRefresh)
+          restoredSession = { ...storedSession, ...refreshedSession }
+          saveStoredSession(restoredSession, storedSession.remember)
+        }
+
+        if (!active) return
+        setSession(restoredSession)
+        setLoginEmail(restoredSession.usuario.email)
+        setRememberSession(storedSession.remember)
+        setLoginSuccess(true)
+      } catch (error) {
+        if (!active) return
+
+        if (error instanceof AuthApiError && error.status === 401) {
+          try {
+            clearStoredSession()
+          } catch (storageError) {
+            showToast(storageError.message)
+            return
+          }
+          showToast('Tu sesión expiró. Inicia sesión nuevamente.')
+          return
+        }
+
+        showToast(error.message || 'No se pudo restaurar la sesión.')
+      }
     }
 
-    setUsers((currentUsers) => [...currentUsers, { ...user, email }])
-    setLoginEmail(email)
-    setIsRegisterOpen(false)
-    setLoginSuccess(false)
-    showToast('¡Tu cuenta fue creada correctamente!', 'success')
-    return true
+    restoreSession()
+    return () => {
+      active = false
+    }
+  }, [showToast])
+
+  const registerUser = async (user) => {
+    setIsRegistering(true)
+    try {
+      await registerWithApi(user)
+      setLoginEmail(user.email.trim().toLowerCase())
+      setIsRegisterOpen(false)
+      setLoginSuccess(false)
+      showToast('¡Tu cuenta fue creada! Ya puedes iniciar sesión.', 'success')
+    } catch (error) {
+      if (error instanceof AuthApiError && error.status === 409) {
+        showToast('Ese nombre de usuario o correo ya está registrado.')
+      } else {
+        showToast(error.message || 'No se pudo crear la cuenta.')
+      }
+    } finally {
+      setIsRegistering(false)
+    }
   }
 
-  const loginUser = ({ email, password }) => {
-    const user = users.find(
-      (registeredUser) =>
-        registeredUser.email === email.trim().toLowerCase() &&
-        registeredUser.password === password,
-    )
+  const loginUser = async ({ email, password, remember }) => {
+    setIsLoggingIn(true)
+    setLoginSuccess(false)
 
-    if (!user) {
-      showToast('Correo o contraseña incorrectos.', 'error')
+    try {
+      const response = await loginWithApi({ email, password })
+      const authenticatedSession = {
+        usuario: response.usuario,
+        token: response.token,
+        tokenRefresh: response.tokenRefresh,
+        expiraEn: response.expiraEn,
+      }
+
+      setSession(authenticatedSession)
+      setLoginEmail(response.usuario.email)
+      setRememberSession(remember)
+      setLoginSuccess(true)
+
+      try {
+        saveStoredSession(authenticatedSession, remember)
+        showToast(`¡Qué gusto verte, ${response.usuario.username}!`, 'success')
+      } catch {
+        showToast('Iniciaste sesión, pero no se pudo guardar la sesión en este navegador.')
+      }
+    } catch (error) {
+      if (error instanceof AuthApiError && error.status === 401) {
+        showToast('Correo o contraseña incorrectos.')
+      } else {
+        showToast(error.message || 'No se pudo iniciar sesión.')
+      }
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
+
+  const logoutUser = async () => {
+    if (!session) return
+
+    try {
+      await logoutWithApi(session.token)
+    } catch (error) {
+      if (!(error instanceof AuthApiError) || error.status !== 401) {
+        showToast(error.message || 'No se pudo cerrar la sesión.')
+        return
+      }
+    }
+
+    try {
+      clearStoredSession()
+    } catch (error) {
+      showToast(error.message || 'No se pudo borrar la sesión guardada.')
       return
     }
 
-    setLoginEmail(user.email)
-    setLoginSuccess(true)
-    showToast(`¡Qué gusto verte, ${user.name.split(' ')[0]}!`, 'success')
+    setSession(null)
+    setLoginSuccess(false)
+    setRememberSession(false)
+    showToast('Sesión cerrada correctamente.', 'success')
   }
 
   return (
@@ -148,13 +265,23 @@ function App() {
             {loginSuccess && (
               <div className="-mt-[13px] mb-[17px] flex items-center gap-2 rounded-[7px] border border-[#d5ecde] bg-[#f1faf4] px-3 py-[10px] text-[10px] leading-[1.5] text-[#286347]" role="status">
                 <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-[#489d70] text-[11px] text-white">✓</span>
-                Sesión iniciada correctamente. Tu acceso está listo.
+                <span className="flex-1">Sesión iniciada correctamente. Tu acceso está listo.</span>
+                <button
+                  type="button"
+                  className="shrink-0 font-semibold text-[#167a59] hover:underline"
+                  onClick={logoutUser}
+                >
+                  Cerrar sesión
+                </button>
               </div>
             )}
 
             <LoginForm
               email={loginEmail}
+              rememberSession={rememberSession}
+              isSubmitting={isLoggingIn}
               onEmailChange={setLoginEmail}
+              onRememberChange={setRememberSession}
               onLogin={loginUser}
               onRegister={() => setIsRegisterOpen(true)}
               showToast={showToast}
@@ -176,6 +303,7 @@ function App() {
           onClose={() => setIsRegisterOpen(false)}
           onRegister={registerUser}
           showToast={showToast}
+          isSubmitting={isRegistering}
         />
       </RegisterModalAnimation>
 

@@ -6,7 +6,16 @@ const fieldClassName =
 const iconClassName =
   'size-[17px] shrink-0 stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.55]'
 
-function LoginForm({ email, onEmailChange, onLogin, onRegister, showToast }) {
+function LoginForm({
+  email,
+  rememberSession,
+  isSubmitting,
+  onEmailChange,
+  onRememberChange,
+  onLogin,
+  onRegister,
+  showToast,
+}) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
@@ -23,7 +32,7 @@ function LoginForm({ email, onEmailChange, onLogin, onRegister, showToast }) {
       return
     }
 
-    onLogin({ email, password })
+    onLogin({ email, password, remember: rememberSession })
   }
 
   return (
@@ -92,7 +101,12 @@ function LoginForm({ email, onEmailChange, onLogin, onRegister, showToast }) {
       </div>
 
       <label className="mb-[21px] flex w-fit cursor-pointer items-center gap-2 text-[9px] text-[#79837d]">
-        <input className="peer sr-only" type="checkbox" />
+        <input
+          className="peer sr-only"
+          type="checkbox"
+          checked={rememberSession}
+          onChange={(event) => onRememberChange(event.target.checked)}
+        />
         <span className="grid size-[14px] place-items-center rounded border border-[#dce3dd] bg-white text-[9px] text-transparent transition peer-checked:border-[#167a59] peer-checked:bg-[#167a59] peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#167a59]">
           ✓
         </span>
@@ -101,9 +115,10 @@ function LoginForm({ email, onEmailChange, onLogin, onRegister, showToast }) {
 
       <button
         type="submit"
-        className="relative flex min-h-[46px] w-full items-center justify-center rounded-[7px] border border-[#126b4d] bg-[linear-gradient(105deg,#167a59,#0d6649)] text-[11px] font-bold text-white shadow-[0_7px_17px_rgba(22,122,89,0.15)] transition hover:-translate-y-px hover:bg-[linear-gradient(105deg,#18835f,#0e7251)] hover:shadow-[0_10px_20px_rgba(22,122,89,0.21)]"
+        disabled={isSubmitting}
+        className="relative flex min-h-[46px] w-full items-center justify-center rounded-[7px] border border-[#126b4d] bg-[linear-gradient(105deg,#167a59,#0d6649)] text-[11px] font-bold text-white shadow-[0_7px_17px_rgba(22,122,89,0.15)] transition hover:-translate-y-px hover:bg-[linear-gradient(105deg,#18835f,#0e7251)] hover:shadow-[0_10px_20px_rgba(22,122,89,0.21)] disabled:cursor-wait disabled:opacity-70"
       >
-        <span>Iniciar sesión</span>
+        <span>{isSubmitting ? 'Conectando...' : 'Iniciar sesión'}</span>
         <span className="absolute right-[15px] text-[15px] font-normal" aria-hidden="true">↗</span>
       </button>
 

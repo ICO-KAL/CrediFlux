@@ -6,8 +6,8 @@ const fieldClassName =
 const iconClassName =
   'size-[17px] shrink-0 stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.55]'
 
-function RegisterModal({ onClose, onRegister, showToast }) {
-  const [name, setName] = useState('')
+function RegisterModal({ onClose, onRegister, showToast, isSubmitting }) {
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -25,7 +25,7 @@ function RegisterModal({ onClose, onRegister, showToast }) {
   const handleSubmit = (event) => {
     event.preventDefault()
 
-    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
       showToast('Completa todos los campos para crear tu cuenta.')
       return
     }
@@ -45,7 +45,7 @@ function RegisterModal({ onClose, onRegister, showToast }) {
       return
     }
 
-    onRegister({ name: name.trim(), email, password })
+    onRegister({ username: username.trim(), email, password })
   }
 
   return (
@@ -78,8 +78,8 @@ function RegisterModal({ onClose, onRegister, showToast }) {
       </div>
 
       <form className="flex flex-col items-stretch" onSubmit={handleSubmit} noValidate>
-        <label className="mb-1.5 text-[10px] font-bold text-[#35433c]" htmlFor="register-name">
-          Nombre completo
+        <label className="mb-1.5 text-[10px] font-bold text-[#35433c]" htmlFor="register-username">
+          Nombre de usuario
         </label>
         <div className="mb-3 flex h-[42px] items-center rounded-[7px] border border-[#e6eae6] bg-white transition-[border-color,box-shadow,background] duration-200 focus-within:border-[#69a98a] focus-within:bg-[#fcfefc] focus-within:shadow-[0_0_0_3px_rgba(44,131,90,0.08)]">
           <span className="ml-[13px] grid size-[17px] shrink-0 place-items-center text-[#8d9991]" aria-hidden="true">
@@ -88,7 +88,7 @@ function RegisterModal({ onClose, onRegister, showToast }) {
               <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
             </svg>
           </span>
-          <input className={fieldClassName} id="register-name" name="name" type="text" autoComplete="name" placeholder="¿Cómo te llamas?" value={name} onChange={(event) => setName(event.target.value)} aria-required="true" />
+          <input className={fieldClassName} id="register-username" name="username" type="text" autoComplete="username" maxLength={50} placeholder="Elige un nombre de usuario" value={username} onChange={(event) => setUsername(event.target.value)} aria-required="true" />
         </div>
 
         <label className="mb-1.5 text-[10px] font-bold text-[#35433c]" htmlFor="register-email">
@@ -135,9 +135,10 @@ function RegisterModal({ onClose, onRegister, showToast }) {
 
         <button
           type="submit"
-          className="relative mt-[5px] flex min-h-[44px] w-full items-center justify-center rounded-[7px] border border-[#126b4d] bg-[linear-gradient(105deg,#167a59,#0d6649)] text-[11px] font-bold text-white shadow-[0_7px_17px_rgba(22,122,89,0.15)] transition hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(22,122,89,0.21)]"
+          disabled={isSubmitting}
+          className="relative mt-[5px] flex min-h-[44px] w-full items-center justify-center rounded-[7px] border border-[#126b4d] bg-[linear-gradient(105deg,#167a59,#0d6649)] text-[11px] font-bold text-white shadow-[0_7px_17px_rgba(22,122,89,0.15)] transition hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(22,122,89,0.21)] disabled:cursor-wait disabled:opacity-70"
         >
-          <span>Crear mi cuenta</span>
+          <span>{isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}</span>
           <span className="absolute right-[15px] text-[15px] font-normal" aria-hidden="true">↗</span>
         </button>
       </form>
