@@ -24,12 +24,12 @@ function LoginForm({
 
     if (!email.trim() || !password) {
       showToast('Completa tu correo y contraseña para continuar.')
-      return
+      return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       showToast('Ingresa un correo electrónico válido.')
-      return
+      return;
     }
 
     onLogin({ email, password, remember: rememberSession })
