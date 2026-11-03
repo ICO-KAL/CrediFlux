@@ -126,3 +126,26 @@ export async function registrarPago(req, res) {
         await session?.endSession();
     }
 }
+
+export async function listarPagos(req, res) {
+    // Listar pagos
+    try {
+        const pagos = await mongoose.model('Pago').find();
+        return res.status(200).json(pagos);
+    } catch (error) {
+        return responderError(res, error, 'Error al listar los pagos');
+    }
+}
+
+export async function EliminarPago(req, res) {
+    try {
+        const { id } = req.params;
+        const eliminado = await mongoose.model('Pago').findByIdAndDelete(id);
+        if (!eliminado) {
+            return res.status(404).json({ message: 'Pago no encontrado' });
+        }
+        return res.status(200).json({ message: 'Pago eliminado correctamente' });
+    } catch (error) {
+        return responderError(res, error, 'Error al eliminar el pago');
+    }
+}
