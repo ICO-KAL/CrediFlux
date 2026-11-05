@@ -102,7 +102,7 @@ export async function obtenerSolicitudesCredito(req, res) {
         return responderError(res, error, 'Error al obtener las solicitudes');
     }
 }
-
+// evaluar si eliminarlo o no, ya que se puede obtener la solicitud por ID desde la lista general
 export async function obtenerSolicitudCreditoPorId(req, res) {
     try {
         const { id } = req.params;

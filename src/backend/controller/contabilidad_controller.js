@@ -2,9 +2,8 @@ import mongoose from 'mongoose';
 import '../models/asiento_contable.js';
 import '../models/cuenta_contable.js';
 import '../models/movimiento_contable.js';
-import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
+import { esObjectId, responderError, validarPaginacion, tiposCuenta} from '../helpers/controlador.js';
 
-const tiposCuenta = ['activo', 'pasivo', 'patrimonio', 'ingreso', 'gasto'];
 
 export async function listarCuentasContables(req, res) {
     try {

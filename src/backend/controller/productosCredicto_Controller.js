@@ -1,26 +1,7 @@
 import mongoose from 'mongoose';
 import productos from '../models/producto_credito.js';
-import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
+import { esObjectId, responderError, validarPaginacion, validarProducto } from '../helpers/controlador.js';
 
-function validarProducto(datos) {
-    const { nombre, tasaInteresAnual, plazoMaximosMeses, montoMinimo, montoMaximo } = datos;
-    if (nombre !== undefined && (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 150)) {
-        return 'Nombre inválido';
-    }
-    if (tasaInteresAnual !== undefined && (typeof tasaInteresAnual !== 'number' || !Number.isFinite(tasaInteresAnual) || tasaInteresAnual < 0)) {
-        return 'La tasa anual debe ser un número mayor o igual a cero';
-    }
-    if (plazoMaximosMeses !== undefined && (!Number.isInteger(plazoMaximosMeses) || plazoMaximosMeses < 1)) {
-        return 'El plazo máximo debe ser un entero mayor que cero';
-    }
-    if (montoMinimo !== undefined && (typeof montoMinimo !== 'number' || !Number.isFinite(montoMinimo) || montoMinimo < 0)) {
-        return 'El monto mínimo debe ser un número no negativo';
-    }
-    if (montoMaximo !== undefined && (typeof montoMaximo !== 'number' || !Number.isFinite(montoMaximo) || montoMaximo < 0)) {
-        return 'El monto máximo debe ser un número no negativo';
-    }
-    return null;
-}
 
 export async function CrearProducto(req, res) {
     try {

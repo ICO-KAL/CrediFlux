@@ -5,9 +5,7 @@ import '../models/cuota.js';
 import '../models/prestamo.js';
 import '../models/transaccion_financiera.js';
 import { esObjectId, responderError } from '../helpers/controlador.js';
-import * as seguimiento from './seguimiento_controller.js';
 
-export const listarPagos = seguimiento.listarPagos;
 
 export async function registrarPago(req, res) {
     let session;
@@ -128,9 +126,11 @@ export async function registrarPago(req, res) {
 }
 
 export async function listarPagos(req, res) {
-    // Listar pagos
     try {
         const pagos = await mongoose.model('Pago').find();
+        if(pagos.length === 0 || !pagos || typeof pagos === 'undefined') {
+            return res.status(401).json({ message: 'No se encontraron pagos' });
+        }
         return res.status(200).json(pagos);
     } catch (error) {
         return responderError(res, error, 'Error al listar los pagos');
@@ -147,5 +147,22 @@ export async function EliminarPago(req, res) {
         return res.status(200).json({ message: 'Pago eliminado correctamente' });
     } catch (error) {
         return responderError(res, error, 'Error al eliminar el pago');
+    }
+}
+
+export async function actualizarPago(req, res) {
+    try {
+        const { id } = req.params;
+        const actualizado = await mongoose.model('Pago').findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+        if (!actualizado) {
+            return res.status(404).json({ message: 'Pago no encontrado' });
+        }
+        if(typeof req.body === 'undefined' || Object.keys(req.body).length === 0) {
+            return res.status(400).json({ message: 'No se proporcionaron datos para actualizar' });
+        }
+
+        return res.status(200).json({ message: 'Pago actualizado correctamente', pago: actualizado });
+    } catch (error) {
+        return responderError(res, error, 'Error al actualizar el pago');
     }
 }

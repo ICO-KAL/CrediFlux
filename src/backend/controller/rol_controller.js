@@ -1,30 +1,7 @@
 import mongoose from 'mongoose';
 import rol from '../models/rol.js';
-import permisoModel from '../models/permiso.js';
 import usuarioModel from '../models/usuario.js';
-
-async function validarPermisos(permisos) {
-    if (!Array.isArray(permisos) || permisos.some((id) => !objectIdValido(id))) {
-        return false;
-    }
-
-    const permisosUnicos = [...new Set(permisos)];
-    const encontrados = await Promise.all(
-        permisosUnicos.map((id) => permisoModel.getIdPermiso(id))
-    );
-    return encontrados.every(Boolean);
-}
-
-function responderError(res, error, mensaje) {
-    if (error?.code === 11000) {
-        return res.status(409).json({ message: 'Ya existe un rol con ese nombre' });
-    }
-    if (error instanceof mongoose.Error.ValidationError || error instanceof mongoose.Error.CastError) {
-        return res.status(400).json({ message: 'Los datos del rol no son válidos' });
-    }
-    console.error(mensaje, error);
-    return res.status(500).json({ message: mensaje });
-}
+import {esObjectId,responderError,validarPermisos} from '../helpers/controlador.js';
 
 export async function crearRol(req, res) {
     try {
@@ -70,7 +47,7 @@ export async function listarRoles(req, res) {
 export async function obtenerRolId(req, res) {
     try {
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!esObjectId(id)) {
             return res.status(400).json({ message: 'El ID del rol no es válido' });
         }
 
@@ -86,7 +63,7 @@ export async function actualizarRol(req, res) {
     try {
         const { id } = req.params;
         const { nombre, descripcion, permisos } = req.body ?? {};
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!esObjectId(id)) {
             return res.status(400).json({ message: 'El ID del rol no es válido' });
         }
         if (nombre === undefined && descripcion === undefined && permisos === undefined) {
@@ -129,7 +106,7 @@ export async function actualizarRol(req, res) {
 export async function eliminarRol(req, res) {
     try {
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!esObjectId(id)) {
             return res.status(400).json({ message: 'El ID del rol no es válido' });
         }
 
@@ -154,7 +131,7 @@ export async function eliminarRol(req, res) {
 export async function agregarPermisoARol(req, res) {
     try {
         const { id, permisoId } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(permisoId)) {
+        if (!esObjectId(id) || !esObjectId(permisoId)) {
             return res.status(400).json({ message: 'El ID del rol o del permiso no es válido' });
         }
 
@@ -176,7 +153,7 @@ export async function agregarPermisoARol(req, res) {
 export async function quitarPermisoDeRol(req, res) {
     try {
         const { id, permisoId } = req.params;
-        if (mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(permisoId)) {
+        if (esObjectId(id) || !esObjectId(permisoId)) {
             return res.status(400).json({ message: 'El ID del rol o del permiso no es válido' });
         }
 

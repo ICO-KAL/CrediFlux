@@ -4,32 +4,10 @@ import '../models/prestamo.js';
 import '../models/cuota.js';
 import '../models/plan_amortizacion.js';
 import '../models/transaccion_financiera.js';
-import { esObjectId, responderError } from '../helpers/controlador.js';
+import { esObjectId, responderError , errorPlanAmortizacion, sumarMesesConTope } from '../helpers/controlador.js';
 import * as seguimiento from './seguimiento_controller.js';
 
 export const listarDesembolsos = seguimiento.listarDesembolsos;
-
-function errorPlanAmortizacion(mensaje) {
-    const error = new Error(mensaje);
-    error.status = 409;
-    return error;
-}
-
-function sumarMesesConTope(fecha, meses) {
-    const anio = fecha.getUTCFullYear();
-    const mesObjetivo = fecha.getUTCMonth() + meses;
-    const ultimoDia = new Date(Date.UTC(anio, mesObjetivo + 1, 0)).getUTCDate();
-    const dia = Math.min(fecha.getUTCDate(), ultimoDia);
-    return new Date(Date.UTC(
-        anio,
-        mesObjetivo,
-        dia,
-        fecha.getUTCHours(),
-        fecha.getUTCMinutes(),
-        fecha.getUTCSeconds(),
-        fecha.getUTCMilliseconds()
-    ));
-}
 
 export function crearCuotasFrancesas(prestamo, tasaAnual, fechaPrimerPago) {
     const principalCentavos = Math.round(prestamo.montoPrincipal * 100);
