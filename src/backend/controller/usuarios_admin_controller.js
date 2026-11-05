@@ -48,3 +48,25 @@ export async function asignarRolesUsuario(req, res) {
         return responderError(res, error, 'Error al asignar roles');
     }
 }
+
+export async function eliminarRolesUsuario(req, res) {
+    try{
+        const { id } = req.params;
+        const { roles: rolesIds } = req.body ?? {};
+        if (!esObjectId(id)) return res.status(400).json({ message: 'ID de usuario inválido' });
+        if (!Array.isArray(rolesIds) || rolesIds.some((rolId) => !esObjectId(rolId))) {
+            return res.status(400).json({ message: 'roles debe ser una lista de IDs válidos' });
+        }
+        const unicos = [...new Set(rolesIds)];
+        const usuario = await mongoose.model('Usuario').findById(id);
+        if (!usuario) return res.status(404).json({ message: 'Usuario no encontrado' });
+        usuario.roles = usuario.roles.filter((rol) => !unicos.includes(rol.toString()));
+        await usuario.save();
+        await usuario.populate('roles');
+        return res.status(200).json({ message: 'Rol eliminados', usuario });
+    }
+    catch (error) {
+        return responderError(res, error, 'Error al eliminar roles');
+    }
+}
+

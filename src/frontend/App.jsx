@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import LoginForm from './components/LoginForm.jsx'
 import RegisterModal from './components/RegisterModal.jsx'
 import Toast from './components/Toast.jsx'
 import GrowthChart from './animation/GrowthChart.jsx'
 import Entrance from './animation/Entrance.jsx'
+const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
+import { configureApi } from './services/apiClient.js'
 import RegisterModalAnimation from './animation/RegisterModalAnimation.jsx'
 import ToastAnimation from './animation/ToastAnimation.jsx'
 import {
@@ -33,6 +35,42 @@ function App() {
   const showToast = useCallback((message, type = 'error') => {
     setToast({ message, type, id: Date.now() })
   }, [])
+
+  const sessionRef = useRef(null)
+  const rememberRef = useRef(false)
+  useEffect(() => {
+    sessionRef.current = session
+    rememberRef.current = rememberSession
+  }, [session, rememberSession])
+
+  useEffect(() => {
+    configureApi({
+      getToken: () => sessionRef.current?.token ?? null,
+      onUnauthorized: async () => {
+        const current = sessionRef.current
+        if (!current) return null
+        try {
+          const refreshed = await refreshWithApi(current.tokenRefresh)
+          const nextSession = { ...current, ...refreshed }
+          sessionRef.current = nextSession
+          saveStoredSession(nextSession, rememberRef.current)
+          setSession(nextSession)
+          return nextSession.token
+        } catch {
+          sessionRef.current = null
+          try {
+            clearStoredSession()
+          } catch {
+            // la sesión en memoria ya se descartó
+          }
+          setSession(null)
+          setLoginSuccess(false)
+          showToast('Tu sesión expiró. Inicia sesión nuevamente.')
+          return null
+        }
+      },
+    })
+  }, [showToast])
 
   useEffect(() => {
     let active = true
@@ -166,6 +204,25 @@ function App() {
     setLoginSuccess(false)
     setRememberSession(false)
     showToast('Sesión cerrada correctamente.', 'success')
+  }
+
+  if (session && loginSuccess) {
+    return (
+      <>
+        <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#06201a] text-[11px] text-[#6f8f82]">Cargando tu panel…</div>}>
+          <Dashboard session={session} onLogout={logoutUser} notify={showToast} />
+        </Suspense>
+        <ToastAnimation toast={toast}>
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
+        </ToastAnimation>
+      </>
+    )
   }
 
   return (
