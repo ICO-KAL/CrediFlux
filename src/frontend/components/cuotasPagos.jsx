@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { optionsFromValues } from '../helpers/options.js'
 import ResourceTable, { Tabs } from './ResourceTable.jsx'
 import { Badge, Icon, SectionHeader, buttonPrimary, formatDate, formatMoney, shortId } from './ui.jsx'
 import { ClienteName } from './lookups.jsx'
@@ -28,7 +29,7 @@ const cuotaFilters = [
   {
     key: 'estado',
     label: 'Estado',
-    options: ['pendiente', 'pagada', 'vencida'].map((value) => ({ value, label: value })),
+    options: optionsFromValues(['pendiente', 'pagada', 'vencida']),
   },
 ]
 

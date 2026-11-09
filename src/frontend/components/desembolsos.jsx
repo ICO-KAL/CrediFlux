@@ -1,4 +1,5 @@
 import ResourceTable from './ResourceTable.jsx'
+import { optionsFromValues } from '../helpers/options.js'
 import { Badge, formatDate, formatMoney, shortId } from './ui.jsx'
 import { prestamoOptions } from './lookups.jsx'
 import { createDesembolso, listDesembolsos } from '../services/dashboardApi.js'
@@ -16,7 +17,7 @@ const createConfig = {
       label: 'Método de pago',
       type: 'select',
       required: true,
-      options: ['transferencia', 'cheque', 'efectivo'].map((value) => ({ value, label: value })),
+      options: optionsFromValues(['transferencia', 'cheque', 'efectivo']),
     },
     { name: 'referenciaBancaria', label: 'Referencia bancaria' },
     { name: 'fechaPrimerPago', label: 'Fecha del primer pago', type: 'date' },

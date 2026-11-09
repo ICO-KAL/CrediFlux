@@ -1,4 +1,5 @@
 import ResourceTable from './ResourceTable.jsx'
+import { optionsFromValues } from '../helpers/options.js'
 import { Badge, formatDate, formatMoney, shortId } from './ui.jsx'
 import { ClienteName, solicitudOptions } from './lookups.jsx'
 import { createPrestamoDesdeSolicitud, listPrestamos } from '../services/dashboardApi.js'
@@ -27,7 +28,7 @@ const filters = [
   {
     key: 'estado',
     label: 'Estado',
-    options: ['activo', 'en_mora', 'saldado', 'cancelado'].map((value) => ({ value, label: value.replace('_', ' ') })),
+    options: optionsFromValues(['activo', 'en_mora', 'saldado', 'cancelado'], (value) => value.replace('_', ' ')),
   },
 ]
 

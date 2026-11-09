@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ModalAnimation } from '../animation/DashboardAnimation.jsx'
 import { useDashboard } from '../helpers/DashboardContext.js'
 import { clienteOptions } from './lookups.jsx'
@@ -29,6 +29,7 @@ export default function RegistrarPagoModal({ open, onClose, onSaved }) {
   const [loadingCuotas, setLoadingCuotas] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const cuotasRequest = useRef(0)
 
   useEffect(() => {
     if (!open) return undefined
@@ -37,26 +38,34 @@ export default function RegistrarPagoModal({ open, onClose, onSaved }) {
     setCuotas([])
     setSelected({})
     setError('')
-    clienteOptions().then((options) => active && setClientes(options)).catch(() => active && setClientes([]))
+    setClientes([])
+    setLoadingCuotas(false)
+    clienteOptions().then((options) => active && setClientes(options)).catch((err) => active && setError(err.message || 'No se pudieron cargar los clientes.'))
     return () => {
       active = false
+      cuotasRequest.current += 1
     }
   }, [open])
 
   const chooseCliente = async (id) => {
+    const requestId = ++cuotasRequest.current
     setClienteId(id)
     setCuotas([])
     setSelected({})
     setError('')
-    if (!id) return
+    if (!id) {
+      setLoadingCuotas(false)
+      return
+    }
 
     setLoadingCuotas(true)
     try {
-      setCuotas(await listCuotasPendientesDeCliente(id))
+      const result = await listCuotasPendientesDeCliente(id)
+      if (requestId === cuotasRequest.current) setCuotas(result)
     } catch (err) {
-      setError(err.message || 'No se pudieron cargar las cuotas del cliente.')
+      if (requestId === cuotasRequest.current) setError(err.message || 'No se pudieron cargar las cuotas del cliente.')
     } finally {
-      setLoadingCuotas(false)
+      if (requestId === cuotasRequest.current) setLoadingCuotas(false)
     }
   }
 
@@ -142,11 +151,11 @@ export default function RegistrarPagoModal({ open, onClose, onSaved }) {
 
               {loadingCuotas ? (
                 <Spinner label="Buscando cuotas…" />
-              ) : cuotas.length === 0 ? (
+              ) : cuotas.length === 0 && !error ? (
                 <p className="rounded-xl bg-[rgba(3,18,14,0.5)] px-4 py-6 text-center text-[12px] text-[#6f8f82]">
                   Este cliente no tiene cuotas pendientes.
                 </p>
-              ) : (
+              ) : cuotas.length > 0 ? (
                 <ul className="grid gap-2">
                   {cuotas.map((cuota) => {
                     const checked = Boolean(selected[cuota._id])
@@ -167,7 +176,7 @@ export default function RegistrarPagoModal({ open, onClose, onSaved }) {
                     )
                   })}
                 </ul>
-              )}
+              ) : null}
               <p className="mt-2 text-[10px] text-[#6f8f82]">Cada cuota se paga completa; el sistema no admite abonos parciales.</p>
             </div>
           )}

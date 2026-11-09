@@ -102,6 +102,8 @@ npm run dev
 
 Vite reenvía `/auth` al backend en `http://127.0.0.1:3000`. Para desplegar el frontend y la API en dominios distintos, configura `VITE_API_URL` con la URL base de autenticación y `FRONTEND_URL` con el origen del frontend permitido por CORS.
 
+Las utilidades compartidas del frontend se encuentran en `src/frontend/helpers`: formato de interfaz en `uiHelpr.js`, validación en `validation.js` y creación de opciones en `options.js`. Los componentes visuales compartidos permanecen en `src/frontend/components`.
+
 El registro utiliza nombre de usuario, correo y contraseña. El frontend envía la contraseña al endpoint de autenticación por HTTPS en producción; el backend la cifra con bcrypt antes de guardarla. El inicio de sesión devuelve tokens de sesión, que el navegador mantiene en memoria y en `sessionStorage`; si se marca «Mantener mi sesión iniciada», se guardan en `localStorage`. El backend renueva las sesiones al restaurarlas.
 
 ## 🧪 Scripts disponibles
@@ -114,6 +116,8 @@ npm run build
 npm run preview
 npm run lint
 ```
+
+Para comprobar las utilidades compartidas, ejecuta `node --test src/frontend/helpers/helpers.test.js`.
 
 ## 🔐 Seguridad
 

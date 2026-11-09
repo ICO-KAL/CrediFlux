@@ -1,4 +1,5 @@
 import ResourceTable from './ResourceTable.jsx'
+import { optionsFromValues } from '../helpers/options.js'
 import { Badge, formatDate } from './ui.jsx'
 import { createCliente, listClientes } from '../services/dashboardApi.js'
 import { invalidateClientes } from './lookups.jsx'
@@ -34,7 +35,7 @@ const filters = [
   {
     key: 'estado',
     label: 'Estado',
-    options: ['activo', 'suspendido', 'bloqueado'].map((value) => ({ value, label: value })),
+    options: optionsFromValues(['activo', 'suspendido', 'bloqueado']),
   },
 ]
 

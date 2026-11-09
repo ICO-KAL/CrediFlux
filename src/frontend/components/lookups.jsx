@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toOptions } from '../helpers/options.js'
 import { listClientes, listPrestamos, listProductos, listSolicitudes } from '../services/dashboardApi.js'
 import { shortId } from './ui.jsx'
 
@@ -32,11 +33,6 @@ export function ClienteName({ id }) {
   }, [id])
 
   return <span title={id}>{name || `#${shortId(id)}`}</span>
-}
-
-const toOptions = (loader, label) => async () => {
-  const { items } = await loader({ limit: 100 })
-  return items.map((item) => ({ value: item._id, label: label(item) }))
 }
 
 export const clienteOptions = toOptions(listClientes, (c) => `${c.nombres} ${c.apellidos}`)

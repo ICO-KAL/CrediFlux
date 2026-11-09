@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { optionsFromValues } from '../helpers/options.js'
 import ResourceTable, { Tabs } from './ResourceTable.jsx'
 import { Badge, SectionHeader, formatDate, formatMoney, shortId } from './ui.jsx'
 import { ClienteName } from './lookups.jsx'
@@ -17,7 +18,7 @@ const tabs = {
   cuentas: {
     label: 'Cuentas de crédito',
     load: listCuentasCredito,
-    filters: [{ key: 'estado', label: 'Estado', options: ['activa', 'bloqueada', 'cerrada'].map((v) => ({ value: v, label: v })) }],
+    filters: [{ key: 'estado', label: 'Estado', options: optionsFromValues(['activa', 'bloqueada', 'cerrada']) }],
     columns: [
       cliente,
       money('limiteCredito', 'Límite'),
@@ -41,7 +42,7 @@ const tabs = {
   tarjetas: {
     label: 'Tarjetas',
     load: listTarjetas,
-    filters: [{ key: 'estado', label: 'Estado', options: ['activa', 'bloqueada', 'cancelada'].map((v) => ({ value: v, label: v })) }],
+    filters: [{ key: 'estado', label: 'Estado', options: optionsFromValues(['activa', 'bloqueada', 'cancelada']) }],
     columns: [
       cliente,
       { key: 'numeroEnmascarado', label: 'Tarjeta', render: (row) => <span className="font-mono">{row.numeroEnmascarado}</span> },

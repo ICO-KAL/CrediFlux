@@ -16,11 +16,14 @@ import {
 
 function FieldInput({ field, value, onChange }) {
   const [options, setOptions] = useState(field.options || [])
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     if (!field.loadOptions) return undefined
     let active = true
-    field.loadOptions().then((loaded) => active && setOptions(loaded)).catch(() => active && setOptions([]))
+    field.loadOptions()
+      .then((loaded) => active && setOptions(loaded))
+      .catch((error) => active && setLoadError(error.message || 'No se pudieron cargar las opciones.'))
     return () => {
       active = false
     }
@@ -28,12 +31,15 @@ function FieldInput({ field, value, onChange }) {
 
   if (field.type === 'select') {
     return (
-      <select className={inputClass} value={value} onChange={(event) => onChange(event.target.value)} required={field.required}>
-        <option value="">Selecciona…</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
+      <>
+        <select className={inputClass} value={value} onChange={(event) => onChange(event.target.value)} required={field.required}>
+          <option value="">Selecciona…</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        {loadError && <span className="text-[#f08c7e]" role="alert">{loadError} Cierra y vuelve a abrir el formulario para reintentar.</span>}
+      </>
     )
   }
 

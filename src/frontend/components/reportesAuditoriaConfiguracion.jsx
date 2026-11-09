@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { optionsFromValues } from '../helpers/options.js'
 import ResourceTable, { Tabs } from './ResourceTable.jsx'
 import { Badge, SectionHeader, formatDateTime, shortId } from './ui.jsx'
 import { ClienteName, clienteOptions } from './lookups.jsx'
@@ -27,7 +28,7 @@ const tabs = {
   incidencias: {
     label: 'Incidencias de riesgo',
     load: listIncidencias,
-    filters: [{ key: 'nivelRiesgo', label: 'Nivel', options: ['bajo', 'medio', 'alto', 'critico'].map((v) => ({ value: v, label: v })) }],
+    filters: [{ key: 'nivelRiesgo', label: 'Nivel', options: optionsFromValues(['bajo', 'medio', 'alto', 'critico']) }],
     createConfig: {
       label: 'Nueva incidencia',
       title: 'Registrar incidencia de riesgo',
@@ -35,7 +36,7 @@ const tabs = {
       submit: createIncidencia,
       fields: [
         { name: 'clienteId', label: 'Cliente', type: 'select', required: true, loadOptions: clienteOptions },
-        { name: 'nivelRiesgo', label: 'Nivel de riesgo', type: 'select', required: true, options: ['bajo', 'medio', 'alto', 'critico'].map((v) => ({ value: v, label: v })) },
+        { name: 'nivelRiesgo', label: 'Nivel de riesgo', type: 'select', required: true, options: optionsFromValues(['bajo', 'medio', 'alto', 'critico']) },
         { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true },
       ],
     },
