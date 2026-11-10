@@ -2,15 +2,10 @@ import mongoose from 'mongoose';
 import solicitudesCredito from '../models/solicitud_credito.js';
 import clientes from '../models/cliente.js';
 import productosCredito from '../models/producto_credito.js';
-import { esObjectId as esObjectIdValido } from '../helpers/controlador.js';
+import { esObjectId as esObjectIdValido, responderError } from '../helpers/controlador.js';
 
 const estadosSolicitud = ['pendiente', 'en_revision', 'aprobada', 'rechazada', 'cancelada'];
 const limiteMaximoPagina = 100;
-
-function responderError(res, error, mensaje) { // eliminar
-    console.error(mensaje, error);
-    return res.status(500).json({ message: mensaje });
-}
 
 function validarImporteYPlazo(producto, montoSolicitado, plazoSolicitadoMeses) {
     if (montoSolicitado < producto.montoMinimo || montoSolicitado > producto.montoMaximo) {
@@ -40,8 +35,8 @@ export async function crearSolicitudCredito(req, res) {
         }
 
         const [cliente, producto] = await Promise.all([
-            clientes.getIdCliente(clienteId),
-            productosCredito.getIdProductoCredito(productoCreditoId)
+            clientes.getCliente({ _id: clienteId }),
+            productosCredito.getProductoCredito({ _id: productoCreditoId })
         ]);
         if (!cliente) return res.status(404).json({ message: 'No se encontró el cliente' });
         if (cliente.estado !== 'activo') return res.status(409).json({ message: 'El cliente no está habilitado para solicitar crédito' });
@@ -61,7 +56,7 @@ export async function crearSolicitudCredito(req, res) {
         if (error instanceof mongoose.Error.ValidationError) {
             return res.status(400).json({ message: 'Los datos de la solicitud no son válidos' });
         }
-        return responderError(res, error, 'Error al crear la solicitud');
+        return responderError(res, error, 'Error al crear la solicitud', { soloInterno: true });
     }
 }
 
@@ -99,10 +94,10 @@ export async function obtenerSolicitudesCredito(req, res) {
             }
         });
     } catch (error) {
-        return responderError(res, error, 'Error al obtener las solicitudes');
+        return responderError(res, error, 'Error al obtener las solicitudes', { soloInterno: true });
     }
 }
-
+// evaluar si eliminarlo o no, ya que se puede obtener la solicitud por ID desde la lista general
 export async function obtenerSolicitudCreditoPorId(req, res) {
     try {
         const { id } = req.params;
@@ -110,11 +105,11 @@ export async function obtenerSolicitudCreditoPorId(req, res) {
             return res.status(400).json({ message: 'El ID de la solicitud no es válido' });
         }
 
-        const solicitud = await solicitudesCredito.getIdSolicitudCredito(id);
+        const solicitud = await solicitudesCredito.getSolicitudCredito({ _id: id });
         if (!solicitud) return res.status(404).json({ message: 'No se encontró la solicitud' });
         return res.status(200).json({ solicitud });
     } catch (error) {
-        return responderError(res, error, 'Error al obtener la solicitud');
+        return responderError(res, error, 'Error al obtener la solicitud', { soloInterno: true });
     }
 }
 
@@ -130,7 +125,7 @@ export async function actualizarSolicitudCredito(req, res) {
             return res.status(400).json({ message: 'Indica al menos un campo que quieras actualizar' });
         }
 
-        const solicitudActual = await solicitudesCredito.getIdSolicitudCredito(id);
+        const solicitudActual = await solicitudesCredito.getSolicitudCredito({ _id: id });
         if (!solicitudActual) return res.status(404).json({ message: 'No se encontró la solicitud' });
         if (solicitudActual.estado !== 'pendiente') {
             return res.status(409).json({ message: 'Solo se pueden editar solicitudes pendientes' });
@@ -156,7 +151,7 @@ export async function actualizarSolicitudCredito(req, res) {
             cambios.plazoSolicitadoMeses = plazoSolicitadoMeses;
         }
 
-        const producto = await productosCredito.getIdProductoCredito(solicitudActual.productoCreditoId.toString());
+        const producto = await productosCredito.getProductoCredito({ _id: solicitudActual.productoCreditoId.toString() });
         if (!producto) return res.status(409).json({ message: 'El producto asociado a la solicitud ya no existe' });
         const errorLimites = validarImporteYPlazo(producto, nuevoMonto, nuevoPlazo);
         if (errorLimites) return res.status(400).json({ message: errorLimites });
@@ -168,7 +163,7 @@ export async function actualizarSolicitudCredito(req, res) {
         if (error instanceof mongoose.Error.ValidationError) {
             return res.status(400).json({ message: 'Los datos de la solicitud no son válidos' });
         }
-        return responderError(res, error, 'Error al actualizar la solicitud');
+        return responderError(res, error, 'Error al actualizar la solicitud', { soloInterno: true });
     }
 }
 
@@ -183,15 +178,17 @@ export async function marcarSolicitudEnRevision(req, res) {
             return res.status(400).json({ message: 'El ID de la solicitud no es válido' });
         }
 
-        const solicitud = await solicitudesCredito.cambiarEstadoSiPendiente(id, 'en_revision');
+        const solicitud = await solicitudesCredito.actualizarSolicitudCredito(
+            id, { $set: { estado: 'en_revision' } }, { estado: 'pendiente' }
+        );
         if (!solicitud) {
-            const existente = await solicitudesCredito.getIdSolicitudCredito(id);
+            const existente = await solicitudesCredito.getSolicitudCredito({ _id: id });
             if (!existente) return res.status(404).json({ message: 'No se encontró la solicitud' });
             return res.status(409).json({ message: 'Solo se puede enviar a revisión una solicitud pendiente' });
         }
         return res.status(200).json({ message: 'Solicitud enviada a revisión', solicitud });
     } catch (error) {
-        return responderError(res, error, 'Error al cambiar el estado de la solicitud');
+        return responderError(res, error, 'Error al cambiar el estado de la solicitud', { soloInterno: true });
     }
 }
 
@@ -202,15 +199,17 @@ export async function cancelarSolicitudCredito(req, res) {
             return res.status(400).json({ message: 'El ID de la solicitud no es válido' });
         }
 
-        const solicitud = await solicitudesCredito.cambiarEstadoSiPendiente(id, 'cancelada');
+        const solicitud = await solicitudesCredito.actualizarSolicitudCredito(
+            id, { $set: { estado: 'cancelada' } }, { estado: 'pendiente' }
+        );
         if (!solicitud) {
-            const existente = await solicitudesCredito.getIdSolicitudCredito(id);
+            const existente = await solicitudesCredito.getSolicitudCredito({ _id: id });
             if (!existente) return res.status(404).json({ message: 'No se encontró la solicitud' });
             return res.status(409).json({ message: 'Solo se pueden cancelar solicitudes pendientes' });
         }
         return res.status(200).json({ message: 'Solicitud cancelada', solicitud });
     } catch (error) {
-        return responderError(res, error, 'Error al cancelar la solicitud');
+        return responderError(res, error, 'Error al cancelar la solicitud', { soloInterno: true });
     }
 }
 

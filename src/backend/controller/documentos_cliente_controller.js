@@ -10,7 +10,7 @@ export async function registrarDocumentoCliente(req, res) {
             return res.status(400).json({ message: 'Faltan campos requeridos del documento' });
         }
         if (!esObjectId(clienteId)) return res.status(400).json({ message: 'ID de cliente inválido' });
-        if (!await clientes.getIdCliente(clienteId)) return res.status(404).json({ message: 'Cliente no encontrado' });
+        if (!await clientes.getCliente({ _id: clienteId })) return res.status(404).json({ message: 'Cliente no encontrado' });
         if (!['cedula', 'pasaporte', 'licencia'].includes(tipoDocumento)) {
             return res.status(400).json({ message: 'Tipo de documento no permitido' });
         }

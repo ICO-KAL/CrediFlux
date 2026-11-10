@@ -102,7 +102,17 @@ npm run dev
 
 Vite reenvía `/auth` al backend en `http://127.0.0.1:3000`. Para desplegar el frontend y la API en dominios distintos, configura `VITE_API_URL` con la URL base de autenticación y `FRONTEND_URL` con el origen del frontend permitido por CORS.
 
+Las utilidades compartidas del frontend se encuentran en `src/frontend/helpers`: formato de interfaz en `uiHelpr.js`, validación en `validation.js` y creación de opciones en `options.js`. Los componentes visuales compartidos permanecen en `src/frontend/components`.
+
+El transporte HTTP compartido del frontend está en `src/frontend/services/http.js`; los clientes de autenticación y del panel conservan su propio manejo de errores y renovación. Las secciones con pestañas reutilizan `TabbedResourceSection.jsx` y las columnas comunes de préstamos y solicitudes están en `resourceColumns.jsx`.
+
 El registro utiliza nombre de usuario, correo y contraseña. El frontend envía la contraseña al endpoint de autenticación por HTTPS en producción; el backend la cifra con bcrypt antes de guardarla. El inicio de sesión devuelve tokens de sesión, que el navegador mantiene en memoria y en `sessionStorage`; si se marca «Mantener mi sesión iniciada», se guardan en `localStorage`. El backend renueva las sesiones al restaurarlas.
+
+El registro se envía mediante `POST /auth/register`, no abriendo la dirección directamente en el navegador (que usa GET). Si el usuario o el correo ya existe, la API responde `409` y el formulario muestra el aviso correspondiente.
+
+El token de acceso dura una hora y se intenta renovar cinco minutos antes de su vencimiento. La sesión de renovación dura 30 días y se extiende al renovarse; cada renovación rota el token. Las solicitudes simultáneas comparten la renovación y, cuando el navegador admite Web Locks, también se coordinan entre pestañas. Ante fallos de conexión se realizan hasta dos reintentos; el servidor admite repetir la misma operación durante dos minutos para recuperar una respuesta perdida sin volver a rotar el token. Los errores temporales no cierran la sesión; una sesión inválida o cuenta inactiva requiere autenticación nuevamente. En el panel se puede cerrar la sesión actual o todas las sesiones.
+
+En los modelos del backend, las búsquedas individuales usan `getEntidad(filtro)`, incluido el caso de búsqueda por ID mediante `{ _id: id }`. El modelo de usuario permite solicitar explícitamente la contraseña cifrada o los permisos mediante las opciones `incluirPassword` e `incluirPermisos`; la contraseña permanece oculta por defecto. El modelo de roles permite solicitar sus permisos con `incluirPermisos`.
 
 ## 🧪 Scripts disponibles
 
@@ -114,6 +124,10 @@ npm run build
 npm run preview
 npm run lint
 ```
+
+Para comprobar las utilidades compartidas, ejecuta `node --test src/frontend/helpers/helpers.test.js`.
+Para comprobar el transporte y la renovación del frontend, ejecuta `node --test src/frontend/frontend.test.js`.
+Para comprobar las consultas de modelos y los controladores modificados, ejecuta `node --test src/backend/models/modelos.test.js src/backend/controller/usuario_controller.test.js src/backend/controller/sesiones_controller.test.js src/backend/controller/operaciones_modelo.test.js`.
 
 ## 🔐 Seguridad
 

@@ -11,7 +11,7 @@ export async function insertarTarjeta(req, res) {
             return res.status(400).json({ message: 'Cliente, número enmascarado y fecha de expiración son requeridos' });
         }
         if (!esObjectId(clienteId)) return res.status(400).json({ message: 'ID de cliente inválido' });
-        if (!await clientes.getIdCliente(clienteId)) return res.status(404).json({ message: 'Cliente no encontrado' });
+        if (!await clientes.getCliente({ _id: clienteId })) return res.status(404).json({ message: 'Cliente no encontrado' });
         if (typeof limiteCredito !== 'number' || !Number.isFinite(limiteCredito) || limiteCredito < 0 ||
             typeof saldoDisponible !== 'number' || !Number.isFinite(saldoDisponible) ||
             saldoDisponible < 0 || saldoDisponible > limiteCredito) {
@@ -54,7 +54,7 @@ export async function obtenerTarjetaId(req, res) {
     try {
         const { id } = req.params;
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de tarjeta inválido' });
-        const tarjeta = await tarjetaCredito.getTarjeta_credito(id);
+        const tarjeta = await tarjetaCredito.getTarjeta_credito({ _id: id });
         if (!tarjeta) return res.status(404).json({ message: 'Tarjeta no encontrada' });
         return res.status(200).json({ tarjeta });
     } catch (error) {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { isValidEmail } from '../helpers/validation.js'
 
 const fieldClassName =
   'h-[42px] w-full min-w-0 border-0 bg-transparent px-3 text-[11px] text-[#24352b] outline-none placeholder:text-[#b3bab5] focus-visible:outline-none'
@@ -30,7 +31,7 @@ function RegisterModal({ onClose, onRegister, showToast, isSubmitting }) {
       return
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!isValidEmail(email)) {
       showToast('Ingresa un correo electrónico válido.')
       return
     }

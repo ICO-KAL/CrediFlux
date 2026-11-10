@@ -1,13 +1,11 @@
 import { createHash } from 'node:crypto';
 import mongoose from 'mongoose';
-import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
+import { esObjectId, responderError, validarPaginacion , expiracionIdempotenciaMs} from '../helpers/controlador.js';
 import '../models/autorizacion_tarjeta.js';
 import '../models/clave_idempotencia.js';
 import '../models/movimiento_tarjeta.js';
 import '../models/tarjeta_credito.js';
 import '../models/transaccion_financiera.js';
-
-const expiracionIdempotenciaMs = 24 * 60 * 60 * 1000;
 
 export async function autorizarCompraTarjeta(req, res) {
     let session;

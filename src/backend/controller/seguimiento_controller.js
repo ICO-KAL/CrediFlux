@@ -73,16 +73,3 @@ export const listarAutorizacionesTarjeta = (req, res) =>
 
 export const listarTransacciones = (req, res) =>
     listarModelo(req, res, 'TransaccionFinanciera', 'transacciones', 'Error al listar transacciones', ['referenciaId', 'tipoTransaccion']);
-
-export async function marcarNotificacionLeida(req, res) {
-    try {
-        if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de notificación inválido' });
-        const notificacion = await mongoose.model('Notificacion').findByIdAndUpdate(
-            req.params.id, { $set: { leida: true } }, { new: true, runValidators: true }
-        );
-        if (!notificacion) return res.status(404).json({ message: 'Notificación no encontrada' });
-        return res.status(200).json({ message: 'Notificación marcada como leída', notificacion });
-    } catch (error) {
-        return responderError(res, error, 'Error al actualizar la notificación');
-    }
-}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isValidEmail } from '../helpers/validation.js'
 
 const fieldClassName =
   'h-[46px] w-full min-w-0 border-0 bg-transparent px-3 text-[11px] text-[#24352b] outline-none placeholder:text-[#b3bab5] focus-visible:outline-none'
@@ -24,12 +25,12 @@ function LoginForm({
 
     if (!email.trim() || !password) {
       showToast('Completa tu correo y contraseña para continuar.')
-      return
+      return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!isValidEmail(email)) {
       showToast('Ingresa un correo electrónico válido.')
-      return
+      return;
     }
 
     onLogin({ email, password, remember: rememberSession })

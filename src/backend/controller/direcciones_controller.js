@@ -10,7 +10,7 @@ export async function crearDireccion(req, res) {
             return res.status(400).json({ message: 'clienteId, calle, ciudad y provincia son requeridos' });
         }
         if (!esObjectId(clienteId)) return res.status(400).json({ message: 'ID de cliente inválido' });
-        if (!await clientes.getIdCliente(clienteId)) return res.status(404).json({ message: 'Cliente no encontrado' });
+        if (!await clientes.getCliente({ _id: clienteId })) return res.status(404).json({ message: 'Cliente no encontrado' });
         const direccion = await direcciones.crearDireccion(req.body);
         return res.status(201).json({ message: 'Dirección creada', direccion });
     } catch (error) {
@@ -40,7 +40,7 @@ export async function listarDirecciones(req, res) {
 export async function obtenerDireccion(req, res) {
     try {
         if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de dirección inválido' });
-        const direccion = await direcciones.getIdDireccion(req.params.id);
+        const direccion = await direcciones.getDireccion({ _id: req.params.id });
         if (!direccion) return res.status(404).json({ message: 'Dirección no encontrada' });
         return res.status(200).json({ direccion });
     } catch (error) {

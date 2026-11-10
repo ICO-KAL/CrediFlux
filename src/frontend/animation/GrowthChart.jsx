@@ -76,9 +76,10 @@ function LineChart({ reduceMotion }) {
           strokeLinejoin="round"
           initial={reduceMotion ? false : { pathLength: 0 }}
           animate={{ pathLength: 1, strokeWidth: reduceMotion ? [3, 3.2, 3] : [3, 3.8, 3] }}
-          transition={reduceMotion
-            ? { duration: 10, repeat: Infinity, ease: 'easeInOut' }
-            : { duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{
+            pathLength: { duration: reduceMotion ? 0 : 0.6, ease: 'easeOut' },
+            strokeWidth: { duration: reduceMotion ? 10 : 4.2, repeat: Infinity, ease: 'easeInOut' },
+          }}
         />
         <motion.path
           d={linePath}
@@ -302,7 +303,7 @@ function GrowthChart() {
       </div>
 
       <div className="relative h-[132px] overflow-hidden" aria-live="polite">
-        <AnimatePresence initial={false} mode="wait" custom={direction}>
+        <AnimatePresence initial={false} custom={direction}>
           <motion.div
             key={activeChart.type}
             className="absolute inset-0"
@@ -311,7 +312,7 @@ function GrowthChart() {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: reduceMotion ? 0.32 : 0.52, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: reduceMotion ? 0 : 0.25, ease: [0.16, 1, 0.3, 1] }}
           >
             {activeChart.type === 'line' && <LineChart reduceMotion={reduceMotion} />}
             {activeChart.type === 'donut' && <DonutChart reduceMotion={reduceMotion} />}
