@@ -14,6 +14,18 @@ export function validarPaginacion(query) {
     return { page, limit, skip: (page - 1) * limit };
 }
 
+export function validarCamposTexto(campos) {
+    const cambios = {};
+    for (const [campo, valor, maximo] of campos) {
+        if (valor === undefined) continue;
+        if (typeof valor !== 'string' || !valor.trim() || valor.trim().length > maximo) {
+            return { error: `${campo} debe ser texto no vacío de hasta ${maximo} caracteres` };
+        }
+        cambios[campo] = valor.trim();
+    }
+    return { cambios };
+}
+
 export async function validarPermisos(permisos) {
     if (!Array.isArray(permisos) || permisos.some((id) => !esObjectId(id))) {
         return false;
@@ -21,16 +33,16 @@ export async function validarPermisos(permisos) {
 
     const permisosUnicos = [...new Set(permisos)];
     const encontrados = await Promise.all(
-        permisosUnicos.map((id) => permisoModel.getIdPermiso(id))
+        permisosUnicos.map((id) => permisoModel.getPermiso({ _id: id }))
     );
     return encontrados.every(Boolean);
 }
 
-export function responderError(res, error, mensaje) {
-    if (error?.code === 11000) {
+export function responderError(res, error, mensaje, { soloInterno = false } = {}) {
+    if (!soloInterno && error?.code === 11000) {
         return res.status(409).json({ message: 'Ya existe un registro con esos datos únicos' });
     }
-    if (error instanceof mongoose.Error.ValidationError || error instanceof mongoose.Error.CastError) {
+    if (!soloInterno && (error instanceof mongoose.Error.ValidationError || error instanceof mongoose.Error.CastError)) {
         return res.status(400).json({ message: 'Los datos enviados no son válidos' });
     }
     console.error(mensaje, error);
@@ -82,4 +94,3 @@ export function sumarMesesConTope(fecha, meses) {
 export const expiracionIdempotenciaMs = 24 * 60 * 60 * 1000;
 
 export const tiposCuenta = ['activo', 'pasivo', 'patrimonio', 'ingreso', 'gasto'];
-

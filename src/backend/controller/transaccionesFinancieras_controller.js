@@ -30,7 +30,7 @@ export async function obtenerTransaccionesPorId(req, res) {
     try {
         const { id } = req.params;
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de transacción inválido' });
-        const transaccionEncontrada = await transaccion.getIdTransaccionFinanciera(id);
+        const transaccionEncontrada = await transaccion.getTransaccionFinanciera({ _id: id });
         if (!transaccionEncontrada) return res.status(404).json({ message: 'Transacción no encontrada' });
         return res.status(200).json({ transaccion: transaccionEncontrada });
     } catch (error) {

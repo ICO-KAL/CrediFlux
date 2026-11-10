@@ -10,9 +10,6 @@ const crearMovimientoContable = async (datos) => {
 const eliminarMovimientoContable = async (id) => {
     return await movimientoContable.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdMovimientoContable = async (id) => {
-    return await movimientoContable.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
 const actualizarMovimientoContable = async (id, datos) => {
     return await movimientoContable.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, datos, { new: true });
 };
@@ -20,4 +17,4 @@ const allMovimientoContable = async () => {
     return await movimientoContable.find();
 };
 
-export default { getMovimientoContable, crearMovimientoContable, eliminarMovimientoContable, getIdMovimientoContable, actualizarMovimientoContable, allMovimientoContable };
+export default { getMovimientoContable, crearMovimientoContable, eliminarMovimientoContable, actualizarMovimientoContable, allMovimientoContable };

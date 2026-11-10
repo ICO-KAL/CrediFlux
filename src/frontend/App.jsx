@@ -6,11 +6,13 @@ import GrowthChart from './animation/GrowthChart.jsx'
 import Entrance from './animation/Entrance.jsx'
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'))
 import { configureApi } from './services/apiClient.js'
+import { createSingleFlight } from './services/singleFlight.js'
 import RegisterModalAnimation from './animation/RegisterModalAnimation.jsx'
 import ToastAnimation from './animation/ToastAnimation.jsx'
 import {
   AuthApiError,
   loginWithApi,
+  logoutAllWithApi,
   logoutWithApi,
   refreshWithApi,
   registerWithApi,
@@ -38,39 +40,97 @@ function App() {
 
   const sessionRef = useRef(null)
   const rememberRef = useRef(false)
-  useEffect(() => {
-    sessionRef.current = session
-    rememberRef.current = rememberSession
-  }, [session, rememberSession])
+  const refreshFlightRef = useRef(createSingleFlight())
+  const refreshPromiseRef = useRef(null)
+
+  const refreshSession = useCallback(() => {
+    const renew = async () => {
+      let current = sessionRef.current
+      if (!current) return null
+
+      if (rememberRef.current) {
+        const stored = readStoredSession()
+        if (!stored) throw new AuthApiError('La sesión fue cerrada.', 401, 'SESSION_INVALID')
+        if (stored.tokenRefresh !== current.tokenRefresh) {
+          if (stored.usuario.id !== current.usuario.id || stored.usuario.email !== current.usuario.email) {
+            throw new AuthApiError('La sesión guardada cambió en otra pestaña. Actualiza la página para continuar.', 409)
+          }
+          sessionRef.current = stored
+          setSession(stored)
+          return stored.token
+        }
+        current = stored
+      }
+
+      const solicitudId = current.solicitudRenovacion || crypto.randomUUID()
+      current = { ...current, solicitudRenovacion: solicitudId }
+      sessionRef.current = current
+      saveStoredSession(current, rememberRef.current)
+
+      let refreshed
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          refreshed = await refreshWithApi(current.tokenRefresh, solicitudId)
+          break
+        } catch (error) {
+          if (!(error instanceof AuthApiError) || error.status !== 0 || attempt === 2) throw error
+          await new Promise((resolve) => window.setTimeout(resolve, 500 * (attempt + 1)))
+        }
+      }
+
+      if (sessionRef.current?.tokenRefresh !== current.tokenRefresh) return null
+      const { solicitudRenovacion: _solicitudRenovacion, ...previous } = current
+      const nextSession = { ...previous, ...refreshed }
+      sessionRef.current = nextSession
+      setSession(nextSession)
+      saveStoredSession(nextSession, rememberRef.current)
+      return nextSession.token
+    }
+
+    const operation = async () => {
+      try {
+        return await (navigator.locks
+          ? navigator.locks.request('crediflux-session-refresh', renew)
+          : renew())
+      } catch (error) {
+        if (error instanceof AuthApiError && error.status === 401) {
+          sessionRef.current = null
+          setSession(null)
+          setLoginSuccess(false)
+          try {
+            clearStoredSession()
+          } catch (storageError) {
+            showToast(storageError.message || 'No se pudo borrar la sesión guardada.')
+            throw storageError
+          }
+          showToast(error.code === 'ACCOUNT_INACTIVE'
+            ? 'Tu cuenta se encuentra inactiva. Contacta con el administrador.'
+            : 'Tu sesión ha expirado. Inicia sesión nuevamente para continuar.')
+        } else if (error instanceof AuthApiError && error.status === 0) {
+          error.message = 'No pudimos verificar tu sesión. Comprueba tu conexión e inténtalo nuevamente.'
+          showToast(error.message)
+        } else if (error instanceof AuthApiError && error.status >= 500) {
+          error.message = 'Estamos experimentando dificultades técnicas. Inténtalo nuevamente en unos momentos.'
+          showToast(error.message)
+        } else {
+          showToast(error.message || 'No se pudo renovar la sesión. Inténtalo nuevamente.')
+        }
+        throw error
+      }
+    }
+
+    refreshPromiseRef.current = refreshFlightRef.current(operation).finally(() => {
+      refreshPromiseRef.current = null
+    })
+    return refreshPromiseRef.current
+  }, [showToast])
 
   useEffect(() => {
     configureApi({
       getToken: () => sessionRef.current?.token ?? null,
-      onUnauthorized: async () => {
-        const current = sessionRef.current
-        if (!current) return null
-        try {
-          const refreshed = await refreshWithApi(current.tokenRefresh)
-          const nextSession = { ...current, ...refreshed }
-          sessionRef.current = nextSession
-          saveStoredSession(nextSession, rememberRef.current)
-          setSession(nextSession)
-          return nextSession.token
-        } catch {
-          sessionRef.current = null
-          try {
-            clearStoredSession()
-          } catch {
-            // la sesión en memoria ya se descartó
-          }
-          setSession(null)
-          setLoginSuccess(false)
-          showToast('Tu sesión expiró. Inicia sesión nuevamente.')
-          return null
-        }
-      },
+      onUnauthorized: refreshSession,
     })
-  }, [showToast])
+  }, [refreshSession])
 
   useEffect(() => {
     let active = true
@@ -88,14 +148,20 @@ function App() {
 
       try {
         let restoredSession = storedSession
-        try {
-          await verifyWithApi(storedSession.token)
-        } catch (error) {
-          if (!(error instanceof AuthApiError) || error.status !== 401) throw error
-
-          const refreshedSession = await refreshWithApi(storedSession.tokenRefresh)
-          restoredSession = { ...storedSession, ...refreshedSession }
-          saveStoredSession(restoredSession, storedSession.remember)
+        sessionRef.current = storedSession
+        rememberRef.current = storedSession.remember
+        if (storedSession.solicitudRenovacion) {
+          await refreshSession()
+          restoredSession = sessionRef.current
+        } else {
+          try {
+            await verifyWithApi(restoredSession.token)
+          } catch (error) {
+            if (!(error instanceof AuthApiError) || error.status !== 401) throw error
+            if (error.code === 'ACCOUNT_INACTIVE') throw error
+            await refreshSession()
+            restoredSession = sessionRef.current
+          }
         }
 
         if (!active) return
@@ -107,17 +173,22 @@ function App() {
         if (!active) return
 
         if (error instanceof AuthApiError && error.status === 401) {
+          sessionRef.current = null
           try {
             clearStoredSession()
           } catch (storageError) {
             showToast(storageError.message)
             return
           }
-          showToast('Tu sesión expiró. Inicia sesión nuevamente.')
+          showToast(error.code === 'ACCOUNT_INACTIVE'
+            ? 'Tu cuenta se encuentra inactiva. Contacta con el administrador.'
+            : 'Tu sesión ha expirado. Inicia sesión nuevamente para continuar.')
           return
         }
 
-        showToast(error.message || 'No se pudo restaurar la sesión.')
+        showToast(error instanceof AuthApiError && error.status >= 500
+          ? 'Estamos experimentando dificultades técnicas. Inténtalo nuevamente en unos momentos.'
+          : error.message || 'No se pudo restaurar la sesión.')
       }
     }
 
@@ -125,7 +196,33 @@ function App() {
     return () => {
       active = false
     }
-  }, [showToast])
+  }, [refreshSession, showToast])
+
+  useEffect(() => {
+    if (!session || !loginSuccess) return undefined
+
+    let expiresAt
+    try {
+      const payload = JSON.parse(atob(session.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+      expiresAt = Number(payload.exp) * 1000
+      if (!Number.isFinite(expiresAt)) throw new Error('Token sin fecha de expiración')
+    } catch (error) {
+      console.error('No se pudo leer la expiración del token', error)
+      expiresAt = Date.now()
+    }
+    const delay = Math.max(1000, expiresAt - Date.now() - 5 * 60 * 1000)
+    const timer = window.setTimeout(() => {
+      refreshSession().catch(() => {})
+    }, delay)
+    const retryOnline = () => {
+      if (expiresAt - Date.now() <= 5 * 60 * 1000) refreshSession().catch(() => {})
+    }
+    window.addEventListener('online', retryOnline)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('online', retryOnline)
+    }
+  }, [session, loginSuccess, refreshSession])
 
   const registerUser = async (user) => {
     setIsRegistering(true)
@@ -159,6 +256,8 @@ function App() {
         expiraEn: response.expiraEn,
       }
 
+      sessionRef.current = authenticatedSession
+      rememberRef.current = remember
       setSession(authenticatedSession)
       setLoginEmail(response.usuario.email)
       setRememberSession(remember)
@@ -181,16 +280,23 @@ function App() {
     }
   }
 
-  const logoutUser = async () => {
+  const logoutUser = async (all = false) => {
     if (!session) return
 
     try {
-      await logoutWithApi(session.token)
-    } catch (error) {
-      if (!(error instanceof AuthApiError) || error.status !== 401) {
-        showToast(error.message || 'No se pudo cerrar la sesión.')
-        return
+      if (refreshPromiseRef.current) await refreshPromiseRef.current
+      const logout = all ? logoutAllWithApi : logoutWithApi
+      try {
+        await logout(sessionRef.current.token)
+      } catch (error) {
+        if (!(error instanceof AuthApiError) || error.status !== 401) throw error
+        const token = await refreshSession()
+        if (!token) return
+        await logout(token)
       }
+    } catch (error) {
+      if (!(error instanceof AuthApiError) || error.status !== 401) showToast(error.message || 'No se pudo cerrar la sesión.')
+      return
     }
 
     try {
@@ -200,6 +306,7 @@ function App() {
       return
     }
 
+    sessionRef.current = null
     setSession(null)
     setLoginSuccess(false)
     setRememberSession(false)
@@ -210,7 +317,7 @@ function App() {
     return (
       <>
         <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#06201a] text-[11px] text-[#6f8f82]">Cargando tu panel…</div>}>
-          <Dashboard session={session} onLogout={logoutUser} notify={showToast} />
+          <Dashboard session={session} onLogout={() => logoutUser()} onLogoutAll={() => logoutUser(true)} notify={showToast} />
         </Suspense>
         <ToastAnimation toast={toast}>
           {toast && (
@@ -245,7 +352,7 @@ function App() {
             <span>CrediFlux</span>
           </div>
 
-          <Entrance className="mt-[37px] max-w-[390px] md:mt-[58px] lg:mt-[68px] lg:max-w-[440px]" delay={0.08}>
+          <Entrance className="mt-[37px] max-w-[390px] md:mt-[58px] lg:mt-[68px] lg:max-w-[440px]">
             <span className="inline-flex items-center gap-[9px] text-[9px] font-bold tracking-[1.6px] text-[#b3d2c3]">
               <span className="size-[6px] rounded-full bg-[#89d8b8] shadow-[0_0_11px_rgba(137,216,184,0.8)]" />
               FINANZAS CON PROPÓSITO
@@ -261,7 +368,6 @@ function App() {
 
           <Entrance
             className="my-auto mb-[22px] mt-auto hidden min-h-[330px] w-full max-w-[440px] rounded-[16px] border border-[rgba(203,242,222,0.26)] bg-[linear-gradient(130deg,rgba(246,255,249,0.16),rgba(191,224,205,0.055))] px-5 pb-[17px] pt-5 shadow-[0_26px_58px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl md:block lg:px-[22px]"
-            delay={0.25}
           >
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-[7px] text-[10px] font-semibold text-[rgba(239,251,243,0.88)]">
@@ -304,7 +410,7 @@ function App() {
             </span>
           </div>
 
-          <Entrance className="my-auto w-full self-center py-[48px] md:max-w-[385px] md:py-[34px] lg:py-[34px]" delay={0.12}>
+          <Entrance className="my-auto w-full self-center py-[48px] md:max-w-[385px] md:py-[34px] lg:py-[34px]">
             <div className="relative mb-[27px]">
               <svg className="absolute -right-2 -top-6 size-10 stroke-[#dcefe4] [stroke-linecap:round] [stroke-width:1.6]" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                 <path d="M20 3v34M3 20h34M8 8l24 24M32 8 8 32" />

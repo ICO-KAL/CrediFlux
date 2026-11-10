@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import '../models/asiento_contable.js';
 import '../models/cuenta_contable.js';
 import '../models/movimiento_contable.js';
-import { esObjectId, responderError, validarPaginacion, tiposCuenta} from '../helpers/controlador.js';
+import { esObjectId, responderError, validarCamposTexto, validarPaginacion, tiposCuenta } from '../helpers/controlador.js';
 
 
 export async function listarCuentasContables(req, res) {
@@ -50,15 +50,8 @@ export async function actualizarCuentaContable(req, res) {
         const { id } = req.params;
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de cuenta inválido' });
         const { codigo, nombre, tipo } = req.body ?? {};
-        const cambios = {};
-        for (const [campo, valor, maximo] of [['codigo', codigo, 30], ['nombre', nombre, 150]]) {
-            if (valor !== undefined) {
-                if (typeof valor !== 'string' || !valor.trim() || valor.trim().length > maximo) {
-                    return res.status(400).json({ message: `${campo} debe ser texto no vacío de hasta ${maximo} caracteres` });
-                }
-                cambios[campo] = valor.trim();
-            }
-        }
+        const { cambios, error } = validarCamposTexto([['codigo', codigo, 30], ['nombre', nombre, 150]]);
+        if (error) return res.status(400).json({ message: error });
         if (tipo !== undefined) {
             if (!tiposCuenta.includes(tipo)) return res.status(400).json({ message: 'Tipo de cuenta inválido' });
             cambios.tipo = tipo;

@@ -10,7 +10,7 @@ export async function registrarConsentimiento(req, res) {
         if (typeof tipoConsentimiento !== 'string' || !tipoConsentimiento.trim() || typeof aceptado !== 'boolean') {
             return res.status(400).json({ message: 'Tipo de consentimiento y respuesta booleana son requeridos' });
         }
-        if (!await clientes.getIdCliente(clienteId)) return res.status(404).json({ message: 'Cliente no encontrado' });
+        if (!await clientes.getCliente({ _id: clienteId })) return res.status(404).json({ message: 'Cliente no encontrado' });
         const consentimiento = await consentimientos.crearConsentimiento({ clienteId, tipoConsentimiento, aceptado });
         return res.status(201).json({ message: 'Consentimiento registrado', consentimiento });
     } catch (error) {

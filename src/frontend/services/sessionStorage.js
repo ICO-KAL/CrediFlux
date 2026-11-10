@@ -32,9 +32,8 @@ export function readStoredSession() {
 }
 
 export function saveStoredSession(session, remember) {
-  window.localStorage.removeItem(SESSION_KEY)
-  window.sessionStorage.removeItem(SESSION_KEY)
   getStorage(remember).setItem(SESSION_KEY, JSON.stringify(session))
+  getStorage(!remember).removeItem(SESSION_KEY)
 }
 
 export function clearStoredSession() {

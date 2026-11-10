@@ -32,7 +32,7 @@ export async function asignarRolesUsuario(req, res) {
             return res.status(400).json({ message: 'roles debe ser una lista de IDs válidos' });
         }
         const unicos = [...new Set(rolesIds)];
-        const rolesExistentes = await Promise.all(unicos.map((rolId) => roles.getIdRol(rolId)));
+        const rolesExistentes = await Promise.all(unicos.map((rolId) => roles.getRol({ _id: rolId }, { incluirPermisos: true })));
         if (rolesExistentes.some((rol) => !rol)) {
             return res.status(404).json({ message: 'Uno o más roles no existen' });
         }

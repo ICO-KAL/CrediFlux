@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import '../models/configuracion_sistema.js';
-import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
+import { esObjectId, responderError, validarCamposTexto, validarPaginacion } from '../helpers/controlador.js';
 
 export async function listarConfiguraciones(req, res) {
     try {
@@ -56,18 +56,11 @@ export async function actualizarConfiguracion(req, res) {
         const { id } = req.params;
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de configuración inválido' });
         const { claveConfig, valorConfig } = req.body ?? {};
-        const cambios = {};
-        for (const [campo, valor, maximo] of [
+        const { cambios, error } = validarCamposTexto([
             ['claveConfig', claveConfig, 100],
             ['valorConfig', valorConfig, 5000]
-        ]) {
-            if (valor !== undefined) {
-                if (typeof valor !== 'string' || !valor.trim() || valor.trim().length > maximo) {
-                    return res.status(400).json({ message: `${campo} debe ser texto no vacío de hasta ${maximo} caracteres` });
-                }
-                cambios[campo] = valor.trim();
-            }
-        }
+        ]);
+        if (error) return res.status(400).json({ message: error });
         if (!Object.keys(cambios).length) return res.status(400).json({ message: 'Indica campos para actualizar' });
 
         const configuracion = await mongoose.model('ConfiguracionSistema').findByIdAndUpdate(

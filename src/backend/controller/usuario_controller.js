@@ -51,13 +51,15 @@ export async function login(req, res) {
             return res.status(400).json({ message: "Se requieren email y contraseña" });
         }
 
-        const usuario = await usuarioModel.getUsuarioParaLogin(email);
+        const usuario = await usuarioModel.getUsuario({ email }, { incluirPassword: true });
+
         if (!usuario || !await bcrypt.compare(passwordHash, usuario.passwordHash)) {
             return res.status(401).json({ message: "Email o contraseña incorrectos" });
         }
         if (!usuario.activo) {
             return res.status(403).json({ message: "La cuenta está desactivada" });
         }
+
 
         const { token, tokenRefresh, expiraEn } = await crearSesionAutenticada(usuario, req);
         return res.status(200).json({

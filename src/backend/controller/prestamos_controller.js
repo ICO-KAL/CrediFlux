@@ -8,7 +8,7 @@ export async function crearPrestamoDesdeSolicitud(req, res) {
     try {
         const { solicitudId } = req.body ?? {};
         if (!esObjectId(solicitudId)) return res.status(400).json({ message: 'ID de solicitud inválido' });
-        const solicitud = await solicitudes.getIdSolicitudCredito(solicitudId);
+        const solicitud = await solicitudes.getSolicitudCredito({ _id: solicitudId });
         if (!solicitud) return res.status(404).json({ message: 'Solicitud no encontrada' });
         if (solicitud.estado !== 'aprobada') return res.status(409).json({ message: 'Solo se puede crear un préstamo desde una solicitud aprobada' });
 
@@ -59,7 +59,7 @@ export async function listarPrestamos(req, res) {
 export async function obtenerPrestamo(req, res) {
     try {
         if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de préstamo inválido' });
-        const prestamo = await prestamos.getIdPrestamo(req.params.id);
+        const prestamo = await prestamos.getPrestamo({ _id: req.params.id });
         if (!prestamo) return res.status(404).json({ message: 'Préstamo no encontrado' });
         return res.status(200).json({ prestamo });
     } catch (error) {

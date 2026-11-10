@@ -48,7 +48,7 @@ function renderSection(id, navigate) {
   }
 }
 
-export default function Dashboard({ session, onLogout, notify }) {
+export default function Dashboard({ session, onLogout, onLogoutAll, notify }) {
   const [active, setActive] = useState('panel')
   const context = useMemo(() => ({ notify, session }), [notify, session])
   const current = sections.find((section) => section.id === active)
@@ -118,6 +118,15 @@ export default function Dashboard({ session, onLogout, notify }) {
               >
                 <Icon name="logout" />
                 <span className="hidden lg:block">Cerrar sesión</span>
+              </button>
+              <button
+                type="button"
+                onClick={onLogoutAll}
+                title="Cerrar todas las sesiones"
+                className="flex w-full items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-[12px] font-medium text-[#f08c7e] transition hover:bg-[rgba(224,118,106,0.1)] lg:justify-start"
+              >
+                <Icon name="logout" />
+                <span className="hidden lg:block">Cerrar todas las sesiones</span>
               </button>
             </div>
           </motion.aside>

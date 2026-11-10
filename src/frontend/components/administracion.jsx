@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import ResourceTable, { Tabs } from './ResourceTable.jsx'
-import { Badge, SectionHeader, formatDate } from './ui.jsx'
+import TabbedResourceSection from './TabbedResourceSection.jsx'
+import { Badge, formatDate } from './ui.jsx'
 import { createPermiso, createRol, listPermisos, listRoles, listUsuarios } from '../services/dashboardApi.js'
 
 const fecha = { key: 'createdAt', label: 'Creado', render: (row) => formatDate(row.createdAt) }
@@ -69,25 +68,7 @@ const tabs = {
 }
 
 export default function Administracion() {
-  const [tab, setTab] = useState('usuarios')
-  const current = tabs[tab]
-
   return (
-    <div>
-      <SectionHeader eyebrow="SEGURIDAD" title="Administración" />
-      <Tabs
-        tabs={Object.entries(tabs).map(([id, value]) => ({ id, label: value.label }))}
-        active={tab}
-        onChange={setTab}
-      />
-      <ResourceTable
-        key={tab}
-        embedded
-        load={current.load}
-        columns={current.columns}
-        filters={current.filters}
-        createConfig={current.createConfig}
-      />
-    </div>
+    <TabbedResourceSection tabs={tabs} initialTab="usuarios" eyebrow="SEGURIDAD" title="Administración" />
   )
 }

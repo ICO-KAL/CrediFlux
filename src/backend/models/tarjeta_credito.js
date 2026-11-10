@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import tarjetasCredito from "../schemes/tarjetas_credito.js";
 
-const getTarjeta_credito = async (id) => {
-    return await tarjetasCredito.findOne({ _id: new mongoose.Types.ObjectId(id) });
+const getTarjeta_credito = async (filtro) => {
+    return await tarjetasCredito.findOne(filtro);
 };
 
 const crearTarjeta_credito = async (tarjetaCredito) => {

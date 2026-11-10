@@ -1,3 +1,5 @@
+import { sendJson } from './http.js'
+
 export class ApiError extends Error {
   constructor(message, status) {
     super(message)
@@ -22,43 +24,27 @@ function buildUrl(path, query) {
   return search ? `${path}?${search}` : path
 }
 
-async function send(path, { method, body, query }, token) {
-  const headers = new Headers()
-  if (body !== undefined) headers.set('Content-Type', 'application/json')
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-
-  let response
-  try {
-    response = await fetch(buildUrl(path, query), {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  } catch {
-    throw new ApiError('No se pudo conectar con la API. Comprueba que el servidor esté iniciado.', 0)
-  }
-
-  const isJson = (response.headers.get('content-type') || '').includes('application/json')
-  const data = isJson ? await response.json() : null
-
-  if (!response.ok) {
-    throw new ApiError(data?.message || 'La solicitud no pudo completarse.', response.status)
-  }
-  if (!isJson) throw new ApiError('La API devolvió una respuesta inesperada.', response.status)
-
-  return data
+function send(path, { method, body, query }, token) {
+  return sendJson(buildUrl(path, query), { method, body, token }, {
+    ErrorType: ApiError,
+    networkMessage: 'No se pudo conectar con la API. Comprueba que el servidor esté iniciado.',
+    unexpectedMessage: 'La API devolvió una respuesta inesperada.',
+  })
 }
 
 export async function request(path, options = {}) {
   const { method = 'GET', body, query } = options
   const settings = { method, body, query }
 
+  const token = authHandlers.getToken()
   try {
-    return await send(path, settings, authHandlers.getToken())
+    return await send(path, settings, token)
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error
 
-    const newToken = await authHandlers.onUnauthorized()
+    const newToken = authHandlers.getToken() !== token
+      ? authHandlers.getToken()
+      : await authHandlers.onUnauthorized()
     if (!newToken) throw error
     return send(path, settings, newToken)
   }

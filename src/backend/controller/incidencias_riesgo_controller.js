@@ -12,7 +12,7 @@ export async function crearIncidenciaRiesgo(req, res) {
         if (typeof descripcion !== 'string' || !descripcion.trim() || descripcion.trim().length > 3000) {
             return res.status(400).json({ message: 'La descripción es requerida y no puede superar 3000 caracteres' });
         }
-        if (!await clientes.getIdCliente(clienteId)) return res.status(404).json({ message: 'Cliente no encontrado' });
+        if (!await clientes.getCliente({ _id: clienteId })) return res.status(404).json({ message: 'Cliente no encontrado' });
         const incidencia = await mongoose.model('IncidenciaRiesgo').create({
             clienteId, nivelRiesgo, descripcion: descripcion.trim()
         });

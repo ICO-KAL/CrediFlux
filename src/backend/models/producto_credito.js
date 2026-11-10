@@ -10,9 +10,6 @@ const crearProductoCredito = async (datos) => {
 const eliminarProductoCredito = async (id) => {
     return await productoCredito.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdProductoCredito = async (id) => {
-    return await productoCredito.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
 const actualizarProductoCredito = async (id, datos) => {
     return await productoCredito.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
@@ -24,4 +21,4 @@ const allProductoCredito = async () => {
     return await productoCredito.find();
 };
 
-export default { getProductoCredito, crearProductoCredito, eliminarProductoCredito, getIdProductoCredito, actualizarProductoCredito, allProductoCredito };
+export default { getProductoCredito, crearProductoCredito, eliminarProductoCredito, actualizarProductoCredito, allProductoCredito };

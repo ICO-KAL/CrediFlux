@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import rol from '../models/rol.js';
+import permisoModel from '../models/permiso.js';
 import usuarioModel from '../models/usuario.js';
 import {esObjectId,responderError,validarPermisos} from '../helpers/controlador.js';
 
@@ -51,7 +52,7 @@ export async function obtenerRolId(req, res) {
             return res.status(400).json({ message: 'El ID del rol no es válido' });
         }
 
-        const encontrado = await rol.getIdRol(id);
+        const encontrado = await rol.getRol({ _id: id }, { incluirPermisos: true });
         if (!encontrado) return res.status(404).json({ message: 'No se encontró el rol' });
         return res.status(200).json({ rol: encontrado });
     } catch (error) {
@@ -110,7 +111,7 @@ export async function eliminarRol(req, res) {
             return res.status(400).json({ message: 'El ID del rol no es válido' });
         }
 
-        const encontrado = await rol.getIdRol(id);
+        const encontrado = await rol.getRol({ _id: id }, { incluirPermisos: true });
         if (!encontrado) return res.status(404).json({ message: 'No se encontró el rol' });
 
         const usuariosAsignados = await usuarioModel.contarUsuariosConRol(id);
@@ -136,13 +137,13 @@ export async function agregarPermisoARol(req, res) {
         }
 
         const [encontrado, permisoEncontrado] = await Promise.all([
-            rol.getIdRol(id),
-            permisoModel.getIdPermiso(permisoId)
+            rol.getRol({ _id: id }, { incluirPermisos: true }),
+            permisoModel.getPermiso({ _id: permisoId })
         ]);
         if (!encontrado) return res.status(404).json({ message: 'No se encontró el rol' });
         if (!permisoEncontrado) return res.status(404).json({ message: 'No se encontró el permiso' });
 
-        const actualizado = await rol.agregarPermiso(id, permisoId);
+        const actualizado = await rol.actualizarRol(id, { $addToSet: { permisos: new mongoose.Types.ObjectId(permisoId) } });
         if (!actualizado) return res.status(404).json({ message: 'No se encontró el rol' });
         return res.status(200).json({ message: 'Permiso agregado al rol', rol: actualizado });
     } catch (error) {
@@ -153,22 +154,23 @@ export async function agregarPermisoARol(req, res) {
 export async function quitarPermisoDeRol(req, res) {
     try {
         const { id, permisoId } = req.params;
-        if (esObjectId(id) || !esObjectId(permisoId)) {
+        if (!esObjectId(id) || !esObjectId(permisoId)) {
             return res.status(400).json({ message: 'El ID del rol o del permiso no es válido' });
         }
 
         const [encontrado, permisoEncontrado] = await Promise.all([
-            rol.getIdRol(id),
-            permisoModel.getIdPermiso(permisoId)
+            rol.getRol({ _id: id }, { incluirPermisos: true }),
+            permisoModel.getPermiso({ _id: permisoId })
         ]);
         if (!encontrado) return res.status(404).json({ message: 'No se encontró el rol' });
         if (!permisoEncontrado) return res.status(404).json({ message: 'No se encontró el permiso' });
 
-        const actualizado = await rol.quitarPermiso(id, permisoId);
-        if (!actualizado.permisoExistia) {
+        const permiso = new mongoose.Types.ObjectId(permisoId);
+        const actualizado = await rol.actualizarRol(id, { $pull: { permisos: permiso } }, { permisos: permiso });
+        if (!actualizado) {
             return res.status(404).json({ message: 'Ese permiso no estaba asignado al rol' });
         }
-        return res.status(200).json({ message: 'Permiso retirado del rol', rol: actualizado.rol });
+        return res.status(200).json({ message: 'Permiso retirado del rol', rol: actualizado });
     } catch (error) {
         return responderError(res, error, 'Error al quitar el permiso del rol');
     }

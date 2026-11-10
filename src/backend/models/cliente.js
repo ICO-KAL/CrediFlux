@@ -10,14 +10,11 @@ const crearCliente = async (datos) => {
 const eliminarCliente = async (id) => {
     return await cliente.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdCliente = async (id) => {
-    return await cliente.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
-const actualizarCliente = async (id, datos) => {
-    return await cliente.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, datos, { new: true });
+const actualizarCliente = async (id, datos, opciones = {}) => {
+    return await cliente.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, datos, { new: true, ...opciones });
 };
 const allCliente = async () => {
     return await cliente.find();
 };
 
-export default { getCliente, crearCliente, eliminarCliente, getIdCliente, actualizarCliente, allCliente };
+export default { getCliente, crearCliente, eliminarCliente, actualizarCliente, allCliente };

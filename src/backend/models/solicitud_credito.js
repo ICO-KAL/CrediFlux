@@ -10,20 +10,10 @@ const crearSolicitudCredito = async (datos) => {
 const eliminarSolicitudCredito = async (id) => {
     return await solicitudCredito.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdSolicitudCredito = async (id) => {
-    return await solicitudCredito.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
-const actualizarSolicitudCredito = async (id, datos) => {
+const actualizarSolicitudCredito = async (id, datos, filtro = {}) => {
     return await solicitudCredito.findOneAndUpdate(
-        { _id: new mongoose.Types.ObjectId(id) },
+        { ...filtro, _id: new mongoose.Types.ObjectId(id) },
         datos,
-        { new: true, runValidators: true }
-    );
-};
-const cambiarEstadoSiPendiente = async (id, estado) => {
-    return await solicitudCredito.findOneAndUpdate(
-        { _id: new mongoose.Types.ObjectId(id), estado: "pendiente" },
-        { $set: { estado } },
         { new: true, runValidators: true }
     );
 };
@@ -44,9 +34,7 @@ export default {
     getSolicitudCredito,
     crearSolicitudCredito,
     eliminarSolicitudCredito,
-    getIdSolicitudCredito,
     actualizarSolicitudCredito,
-    cambiarEstadoSiPendiente,
     allSolicitudCredito,
     listarSolicitudesCredito
 };

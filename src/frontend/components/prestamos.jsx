@@ -1,7 +1,8 @@
 import ResourceTable from './ResourceTable.jsx'
 import { optionsFromValues } from '../helpers/options.js'
-import { Badge, formatDate, formatMoney, shortId } from './ui.jsx'
-import { ClienteName, solicitudOptions } from './lookups.jsx'
+import { formatMoney } from './ui.jsx'
+import { solicitudOptions } from './lookups.jsx'
+import { clienteColumn, estadoColumn, fechaCreacionColumn, idColumn } from './resourceColumns.jsx'
 import { createPrestamoDesdeSolicitud, listPrestamos } from '../services/dashboardApi.js'
 
 const createConfig = {
@@ -15,13 +16,13 @@ const createConfig = {
 }
 
 const columns = [
-  { key: '_id', label: 'N.º', render: (row) => <span className="font-mono text-[#89d8b8]">#{shortId(row._id)}</span> },
-  { key: 'clienteId', label: 'Cliente', render: (row) => <ClienteName id={row.clienteId} /> },
+  idColumn,
+  clienteColumn,
   { key: 'montoPrincipal', label: 'Principal', align: 'right', render: (row) => formatMoney(row.montoPrincipal) },
   { key: 'tasaInteres', label: 'Tasa', align: 'right', render: (row) => `${row.tasaInteres}%` },
   { key: 'plazoMeses', label: 'Plazo', render: (row) => `${row.plazoMeses} meses` },
-  { key: 'estado', label: 'Estado', render: (row) => <Badge value={row.estado} /> },
-  { key: 'createdAt', label: 'Fecha', render: (row) => formatDate(row.createdAt) },
+  estadoColumn,
+  fechaCreacionColumn,
 ]
 
 const filters = [

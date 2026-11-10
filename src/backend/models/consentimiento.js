@@ -10,9 +10,6 @@ const crearConsentimiento = async (datos) => {
 const eliminarConsentimiento = async (id) => {
     return await consentimiento.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdConsentimiento = async (id) => {
-    return await consentimiento.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
 const actualizarConsentimiento = async (id, datos) => {
     return await consentimiento.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, datos, { new: true });
 };
@@ -20,4 +17,4 @@ const allConsentimiento = async () => {
     return await consentimiento.find();
 };
 
-export default { getConsentimiento, crearConsentimiento, eliminarConsentimiento, getIdConsentimiento, actualizarConsentimiento, allConsentimiento };
+export default { getConsentimiento, crearConsentimiento, eliminarConsentimiento, actualizarConsentimiento, allConsentimiento };

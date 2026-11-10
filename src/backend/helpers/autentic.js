@@ -1,8 +1,9 @@
 import jsonwebtoken from 'jsonwebtoken';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import 'dotenv/config';
-import mongoose from 'mongoose';
 import sesiones from '../models/sesion.js';
 import usuarioModel from '../models/usuario.js';
+import { esObjectId } from './controlador.js';
 
 export function userToken(payload) {
     return jsonwebtoken.sign(payload, process.env.JSON_WEB_TOKEN, {
@@ -25,8 +26,8 @@ export async function verificarToken(req, res, next) {
         return res.status(401).json({ message: 'Token inválido o expirado' });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(usuario.id) ||
-        !mongoose.Types.ObjectId.isValid(usuario.sid)) {
+    if (!esObjectId(usuario.id) ||
+        !esObjectId(usuario.sid)) {
         return res.status(401).json({ message: 'El token no está asociado a una sesión válida' });
     }
 
@@ -37,6 +38,14 @@ export async function verificarToken(req, res, next) {
             expiraEn: { $gt: new Date() }
         });
         if (!sesion) return res.status(401).json({ message: 'La sesión fue cerrada o expiró' });
+
+        const cuenta = await usuarioModel.getUsuario({ _id: usuario.id });
+        if (!cuenta || !cuenta.activo) {
+            return res.status(401).json({
+                code: cuenta ? 'ACCOUNT_INACTIVE' : 'SESSION_INVALID',
+                message: cuenta ? 'Tu cuenta se encuentra inactiva. Contacta con el administrador.' : 'La sesión no es válida'
+            });
+        }
 
         req.usuario = usuario;
         return next();
@@ -50,11 +59,11 @@ export function exigirPermiso(modulo, nombreAccion) {
     return async function verificarPermiso(req, res, next) {
         try {
             const usuarioId = req.usuario?.id;
-            if (!mongoose.Types.ObjectId.isValid(usuarioId)) {
+            if (!esObjectId(usuarioId)) {
                 return res.status(401).json({ message: 'Se requiere una sesión autenticada' });
             }
 
-            const usuario = await usuarioModel.getUsuarioConPermisos(usuarioId);
+            const usuario = await usuarioModel.getUsuario({ _id: usuarioId }, { incluirPermisos: true });
             if (!usuario || !usuario.activo) {
                 return res.status(401).json({ message: 'La cuenta no está disponible' });
             }
@@ -73,4 +82,28 @@ export function exigirPermiso(modulo, nombreAccion) {
             return res.status(500).json({ message: 'No se pudieron verificar los permisos' });
         }
     };
+}
+
+export function hashToken(token) {
+    return createHash('sha256').update(token).digest('hex');
+}
+
+export function crearTokenRefresh() {
+    return randomBytes(48).toString('base64url');
+}
+
+export function crearTokenRefreshParaReintento(token, solicitudId) {
+    return createHmac('sha256', process.env.JSON_WEB_TOKEN)
+        .update(token)
+        .update(':')
+        .update(solicitudId)
+        .digest('base64url');
+}
+
+export function crearTokenAcceso(usuario, sesionId) {
+    return userToken({
+        id: usuario._id.toString(),
+        email: usuario.email,
+        sid: sesionId
+    });
 }

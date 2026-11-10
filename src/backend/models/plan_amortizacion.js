@@ -10,9 +10,6 @@ const crearPlanAmortizacion = async (datos) => {
 const eliminarPlanAmortizacion = async (id) => {
     return await planAmortizacion.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdPlanAmortizacion = async (id) => {
-    return await planAmortizacion.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
 const actualizarPlanAmortizacion = async (id, datos) => {
     return await planAmortizacion.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, datos, { new: true });
 };
@@ -20,4 +17,4 @@ const allPlanAmortizacion = async () => {
     return await planAmortizacion.find();
 };
 
-export default { getPlanAmortizacion, crearPlanAmortizacion, eliminarPlanAmortizacion, getIdPlanAmortizacion, actualizarPlanAmortizacion, allPlanAmortizacion };
+export default { getPlanAmortizacion, crearPlanAmortizacion, eliminarPlanAmortizacion, actualizarPlanAmortizacion, allPlanAmortizacion };

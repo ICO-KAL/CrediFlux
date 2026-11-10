@@ -1,41 +1,23 @@
-const authApiUrl = (import.meta.env.VITE_API_URL || '/auth').replace(/\/+$/, '')
+import { sendJson } from './http.js'
+
+const authApiUrl = (import.meta.env?.VITE_API_URL || '/auth').replace(/\/+$/, '')
 
 export class AuthApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, code) {
     super(message)
     this.name = 'AuthApiError'
     this.status = status
+    this.code = code
   }
 }
 
-async function request(path, { method = 'GET', body, token } = {}) {
-  const headers = new Headers()
-
-  if (body !== undefined) headers.set('Content-Type', 'application/json')
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-
-  let response
-  try {
-    response = await fetch(`${authApiUrl}${path}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-  } catch {
-    throw new Error('No se pudo conectar con la API. Comprueba que el servidor esté iniciado.')
-  }
-
-  const contentType = response.headers.get('content-type') || ''
-  if (!contentType.includes('application/json')) {
-    throw new Error('La API devolvió una respuesta inesperada. Comprueba la configuración del servidor.')
-  }
-
-  const data = await response.json()
-  if (!response.ok) {
-    throw new AuthApiError(data.message || 'La solicitud no pudo completarse.', response.status)
-  }
-
-  return data
+function request(path, { method = 'GET', body, token } = {}) {
+  return sendJson(`${authApiUrl}${path}`, { method, body, token }, {
+    ErrorType: AuthApiError,
+    networkMessage: 'No pudimos verificar tu sesión. Comprueba tu conexión e inténtalo nuevamente.',
+    unexpectedMessage: 'Estamos experimentando dificultades técnicas. Inténtalo nuevamente en unos momentos.',
+    requireJsonBeforeStatus: true,
+  })
 }
 
 export function registerWithApi({ username, email, password }) {
@@ -63,10 +45,10 @@ export function verifyWithApi(token) {
   return request('/verify', { token })
 }
 
-export function refreshWithApi(tokenRefresh) {
+export function refreshWithApi(tokenRefresh, solicitudId) {
   return request('/sessions/refresh', {
     method: 'POST',
-    body: { tokenRefresh },
+    body: { tokenRefresh, solicitudId },
   })
 }
 
@@ -75,4 +57,8 @@ export function logoutWithApi(token) {
     method: 'POST',
     token,
   })
+}
+
+export function logoutAllWithApi(token) {
+  return request('/sessions/logout-all', { method: 'POST', token })
 }

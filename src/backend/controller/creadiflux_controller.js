@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import '../models/creadiflux.js';
-import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
+import { esObjectId, responderError, validarCamposTexto, validarPaginacion } from '../helpers/controlador.js';
 
 export async function listarModulosCrediflux(req, res) {
     try {
@@ -53,18 +53,11 @@ export async function actualizarModuloCrediflux(req, res) {
         const { id } = req.params;
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de módulo inválido' });
         const { nombreModulo, version, parametros } = req.body ?? {};
-        const cambios = {};
-        for (const [campo, valor, maximo] of [
+        const { cambios, error } = validarCamposTexto([
             ['nombreModulo', nombreModulo, 100],
             ['version', version, 50]
-        ]) {
-            if (valor !== undefined) {
-                if (typeof valor !== 'string' || !valor.trim() || valor.trim().length > maximo) {
-                    return res.status(400).json({ message: `${campo} debe ser texto no vacío de hasta ${maximo} caracteres` });
-                }
-                cambios[campo] = valor.trim();
-            }
-        }
+        ]);
+        if (error) return res.status(400).json({ message: error });
         if (parametros !== undefined) {
             if (parametros === null || typeof parametros !== 'object' || Array.isArray(parametros)) {
                 return res.status(400).json({ message: 'Los parámetros deben ser un objeto' });

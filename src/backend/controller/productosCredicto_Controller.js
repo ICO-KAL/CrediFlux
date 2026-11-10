@@ -37,7 +37,7 @@ export async function listarProductos(req, res) {
 export async function obtenerProducto(req, res) {
     try {
         if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de producto inválido' });
-        const producto = await productos.getIdProductoCredito(req.params.id);
+        const producto = await productos.getProductoCredito({ _id: req.params.id });
         if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
         return res.status(200).json({ producto });
     } catch (error) {
@@ -52,7 +52,7 @@ export async function actualizarProducto(req, res) {
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de producto inválido' });
         const error = validarProducto(datos);
         if (error) return res.status(400).json({ message: error });
-        const actual = await productos.getIdProductoCredito(id);
+        const actual = await productos.getProductoCredito({ _id: id });
         if (!actual) return res.status(404).json({ message: 'Producto no encontrado' });
         const minimo = datos.montoMinimo ?? actual.montoMinimo;
         const maximo = datos.montoMaximo ?? actual.montoMaximo;

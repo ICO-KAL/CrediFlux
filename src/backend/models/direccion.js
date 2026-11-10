@@ -10,9 +10,6 @@ const crearDireccion = async (datos) => {
 const eliminarDireccion = async (id) => {
     return await direccion.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
 };
-const getIdDireccion = async (id) => {
-    return await direccion.findOne({ _id: new mongoose.Types.ObjectId(id) });
-};
 const actualizarDireccion = async (id, datos) => {
     return await direccion.findOneAndUpdate(
         { _id: new mongoose.Types.ObjectId(id) },
@@ -24,4 +21,4 @@ const allDireccion = async () => {
     return await direccion.find();
 };
 
-export default { getDireccion, crearDireccion, eliminarDireccion, getIdDireccion, actualizarDireccion, allDireccion };
+export default { getDireccion, crearDireccion, eliminarDireccion, actualizarDireccion, allDireccion };

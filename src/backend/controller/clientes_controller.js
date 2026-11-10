@@ -44,7 +44,7 @@ export async function listarClientes(req, res) {
 export async function obtenerCliente(req, res) {
     try {
         if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de cliente inválido' });
-        const cliente = await clientes.getIdCliente(req.params.id);
+        const cliente = await clientes.getCliente({ _id: req.params.id });
         if (!cliente) return res.status(404).json({ message: 'Cliente no encontrado' });
         return res.status(200).json({ cliente });
     } catch (error) {
@@ -70,7 +70,7 @@ export async function actualizarCliente(req, res) {
             cambios.fechaNacimiento = fecha;
         }
         if (!Object.keys(cambios).length) return res.status(400).json({ message: 'Indica campos para actualizar' });
-        const cliente = await mongoose.model('Cliente').findByIdAndUpdate(id, { $set: cambios }, { new: true, runValidators: true });
+        const cliente = await clientes.actualizarCliente(id, { $set: cambios }, { runValidators: true });
         if (!cliente) return res.status(404).json({ message: 'Cliente no encontrado' });
         return res.status(200).json({ message: 'Cliente actualizado', cliente });
     } catch (error) {

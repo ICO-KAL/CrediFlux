@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import '../models/notificacion.js';
+import notificaciones from '../models/notificacion.js';
 import '../models/cliente.js';
 import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
 
@@ -40,7 +40,7 @@ export async function crearNotificacion(req, res) {
         if (!await mongoose.model('Cliente').exists({ _id: clienteId })) {
             return res.status(404).json({ message: 'Cliente no encontrado' });
         }
-        const notificacion = await mongoose.model('Notificacion').create({
+        const notificacion = await notificaciones.crearNotificacion({
             clienteId, titulo: titulo.trim(), mensaje: mensaje.trim()
         });
         return res.status(201).json({ message: 'Notificación creada', notificacion });
@@ -52,8 +52,8 @@ export async function crearNotificacion(req, res) {
 export async function marcarNotificacionLeida(req, res) {
     try {
         if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de notificación inválido' });
-        const notificacion = await mongoose.model('Notificacion').findByIdAndUpdate(
-            req.params.id, { $set: { leida: true } }, { new: true, runValidators: true }
+        const notificacion = await notificaciones.actualizarNotificacion(
+            req.params.id, { $set: { leida: true } }, { runValidators: true }
         );
         if (!notificacion) return res.status(404).json({ message: 'Notificación no encontrada' });
         return res.status(200).json({ message: 'Notificación marcada como leída', notificacion });
@@ -65,7 +65,7 @@ export async function marcarNotificacionLeida(req, res) {
 export async function eliminarNotificacion(req, res) {
     try {
         if (!esObjectId(req.params.id)) return res.status(400).json({ message: 'ID de notificación inválido' });
-        const notificacion = await mongoose.model('Notificacion').findByIdAndDelete(req.params.id);
+        const notificacion = await notificaciones.eliminarNotificacion(req.params.id);
         if (!notificacion) return res.status(404).json({ message: 'Notificación no encontrada' });
         return res.status(200).json({ message: 'Notificación eliminada', notificacion });
     } catch (error) {
