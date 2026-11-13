@@ -2,6 +2,14 @@ import mongoose from 'mongoose';
 import '../models/configuracion_sistema.js';
 import { esObjectId, responderError, validarCamposTexto, validarPaginacion } from '../helpers/controlador.js';
 
+const claveUmbralAprobacion = 'montoMaximoAprobacionAnalista';
+
+function valorUmbralValido(claveConfig, valorConfig) {
+    if (claveConfig !== claveUmbralAprobacion) return true;
+    const monto = Number(valorConfig);
+    return Number.isFinite(monto) && monto >= 0;
+}
+
 export async function listarConfiguraciones(req, res) {
     try {
         const paginacion = validarPaginacion(req.query);
@@ -41,6 +49,9 @@ export async function crearConfiguracion(req, res) {
             typeof valorConfig !== 'string' || !valorConfig.trim() || valorConfig.trim().length > 5000) {
             return res.status(400).json({ message: 'claveConfig y valorConfig son requeridos y deben respetar sus límites' });
         }
+        if (!valorUmbralValido(claveConfig.trim(), valorConfig.trim())) {
+            return res.status(400).json({ message: 'El umbral de aprobación debe ser un monto numérico no negativo' });
+        }
         const configuracion = await mongoose.model('ConfiguracionSistema').create({
             claveConfig: claveConfig.trim(),
             valorConfig: valorConfig.trim()
@@ -62,6 +73,13 @@ export async function actualizarConfiguracion(req, res) {
         ]);
         if (error) return res.status(400).json({ message: error });
         if (!Object.keys(cambios).length) return res.status(400).json({ message: 'Indica campos para actualizar' });
+        const existente = await mongoose.model('ConfiguracionSistema').findById(id);
+        if (!existente) return res.status(404).json({ message: 'Configuración no encontrada' });
+        const claveFinal = cambios.claveConfig ?? existente.claveConfig;
+        const valorFinal = cambios.valorConfig ?? existente.valorConfig;
+        if (!valorUmbralValido(claveFinal, valorFinal)) {
+            return res.status(400).json({ message: 'El umbral de aprobación debe ser un monto numérico no negativo' });
+        }
 
         const configuracion = await mongoose.model('ConfiguracionSistema').findByIdAndUpdate(
             id, { $set: cambios }, { new: true, runValidators: true }

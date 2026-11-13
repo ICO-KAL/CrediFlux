@@ -82,7 +82,10 @@ export default function RegistrarPagoModal({ open, onClose, onSaved }) {
     setSelected(allSelected ? {} : Object.fromEntries(cuotas.map((cuota) => [cuota._id, true])))
 
   const asignaciones = useMemo(
-    () => cuotas.filter((cuota) => selected[cuota._id]).map((cuota) => ({ cuotaId: cuota._id, montoAplicado: cuota.montoTotal })),
+    () => cuotas.filter((cuota) => selected[cuota._id]).map((cuota) => ({
+      cuotaId: cuota._id,
+      montoAplicado: cuota.montoTotalConMora ?? cuota.montoTotal,
+    })),
     [cuotas, selected],
   )
   const total = asignaciones.reduce((sum, item) => sum + toCents(item.montoAplicado), 0) / 100
@@ -170,7 +173,14 @@ export default function RegistrarPagoModal({ open, onClose, onSaved }) {
                             <p className="text-[10px] text-[#6f8f82]">Vence {formatDate(cuota.fechaVencimiento)}</p>
                           </div>
                           <Badge value={cuota.estado} />
-                          <span className="w-[112px] text-right text-[12px] font-semibold tabular-nums text-white">{formatMoney(cuota.montoTotal)}</span>
+                          <span className="w-[112px] text-right text-[12px] font-semibold tabular-nums text-white">
+                            {formatMoney(cuota.montoTotalConMora ?? cuota.montoTotal)}
+                            {cuota.montoPenalizacionMora > 0 && (
+                              <span className="block text-[9px] font-normal text-[#f08c7e]">
+                                incluye {formatMoney(cuota.montoPenalizacionMora)} de mora
+                              </span>
+                            )}
+                          </span>
                         </label>
                       </li>
                     )

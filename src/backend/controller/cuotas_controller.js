@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 import '../models/cuota.js';
 import '../models/plan_amortizacion.js';
+import '../models/prestamo.js';
 import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
+import { calcularPenalizacionMora } from '../helpers/mora.js';
 
 export async function listarCuotas(req, res) {
     try {
@@ -17,7 +19,21 @@ export async function listarCuotas(req, res) {
             mongoose.model('Cuota').find(filtro).sort({ prestamoId: 1, numeroCuota: 1 }).skip(paginacion.skip).limit(paginacion.limit),
             mongoose.model('Cuota').countDocuments(filtro)
         ]);
-        return res.status(200).json({ cuotas, paginacion: { page: paginacion.page, limit: paginacion.limit, total } });
+        const prestamos = cuotas.length
+            ? await mongoose.model('Prestamo').find({ _id: { $in: [...new Set(cuotas.map((cuota) => cuota.prestamoId.toString()))] } })
+            : [];
+        const prestamosPorId = new Map(prestamos.map((prestamo) => [prestamo._id.toString(), prestamo]));
+        const cuotasConMora = cuotas.map((cuota) => {
+            const item = cuota.toObject();
+            const prestamo = prestamosPorId.get(item.prestamoId.toString());
+            const penalizacion = calcularPenalizacionMora(item, prestamo);
+            return {
+                ...item,
+                montoPenalizacionMora: penalizacion,
+                montoTotalConMora: Math.round((item.montoTotal + penalizacion) * 100) / 100
+            };
+        });
+        return res.status(200).json({ cuotas: cuotasConMora, paginacion: { page: paginacion.page, limit: paginacion.limit, total } });
     } catch (error) {
         return responderError(res, error, 'Error al listar cuotas');
     }

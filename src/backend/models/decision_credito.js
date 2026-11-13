@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import decisionCredito from "../schemes/decisiones_credito.js";
 
 const getDecisionCredito = async (filtro) => {
-    return await decisionCredito.findOne(filtro);
+    return await decisionCredito.findOne(filtro).sort({ createdAt: -1 });
 };
 const crearDecisionCredito = async (datos) => {
     return await decisionCredito.create(datos);

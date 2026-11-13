@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import '../models/evaluacion_crediticia.js';
 import '../models/decision_credito.js';
 import '../models/solicitud_credito.js';
+import '../models/usuario.js';
+import '../models/configuracion_sistema.js';
 import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
 
 export async function crearEvaluacionCrediticia(req, res) {
@@ -74,13 +76,13 @@ export async function decidirSolicitudCredito(req, res) {
     try {
         session = await mongoose.startSession();
         const { solicitudId } = req.params;
-        const { estado, montoAprobado, razonDecision } = req.body ?? {};
+        const { estado, montoAprobado, razonDecision, motivoExcepcion, condiciones } = req.body ?? {};
         const usuarioId = req.usuario?.id;
         if (!esObjectId(solicitudId) || !esObjectId(usuarioId)) {
             return res.status(400).json({ message: 'ID de solicitud o usuario inválido' });
         }
-        if (!['aprobada', 'rechazada'].includes(estado)) {
-            return res.status(400).json({ message: 'La decisión debe ser aprobada o rechazada' });
+        if (!['aprobada', 'rechazada', 'condicionada'].includes(estado)) {
+            return res.status(400).json({ message: 'La decisión debe ser aprobada, rechazada o condicionada' });
         }
         if (estado === 'aprobada' &&
             (typeof montoAprobado !== 'number' || !Number.isFinite(montoAprobado) || montoAprobado <= 0)) {
@@ -92,16 +94,31 @@ export async function decidirSolicitudCredito(req, res) {
         if (razonDecision !== undefined && (typeof razonDecision !== 'string' || razonDecision.length > 2000)) {
             return res.status(400).json({ message: 'La razón no puede superar 2000 caracteres' });
         }
+        if (motivoExcepcion !== undefined &&
+            (typeof motivoExcepcion !== 'string' || !motivoExcepcion.trim() || motivoExcepcion.length > 1000)) {
+            return res.status(400).json({ message: 'La justificación de excepción debe ser texto no vacío de hasta 1000 caracteres' });
+        }
+        if (motivoExcepcion !== undefined && estado !== 'aprobada') {
+            return res.status(400).json({ message: 'La justificación de excepción solo aplica a una aprobación' });
+        }
+        if (estado === 'condicionada' &&
+            (typeof condiciones !== 'string' || !condiciones.trim() || condiciones.length > 2000)) {
+            return res.status(400).json({ message: 'Una solicitud condicionada requiere condiciones de hasta 2000 caracteres' });
+        }
+        if (condiciones !== undefined &&
+            (typeof condiciones !== 'string' || condiciones.length > 2000)) {
+            return res.status(400).json({ message: 'Las condiciones no pueden superar 2000 caracteres' });
+        }
 
         let decisionCreada;
         await session.withTransaction(async () => {
             const solicitud = await mongoose.model('SolicitudCredito').findOne({
                 _id: solicitudId,
-                estado: 'en_revision'
+                estado: { $in: ['en_revision', 'condicionada'] }
             }).session(session);
             if (!solicitud) {
                 const actual = await mongoose.model('SolicitudCredito').findById(solicitudId).session(session);
-                const err = new Error(actual ? 'La solicitud no está en revisión' : 'Solicitud no encontrada');
+                const err = new Error(actual ? 'La solicitud no está disponible para una decisión' : 'Solicitud no encontrada');
                 err.status = actual ? 409 : 404;
                 throw err;
             }
@@ -117,13 +134,45 @@ export async function decidirSolicitudCredito(req, res) {
                 err.status = 400;
                 throw err;
             }
+            if (estado === 'aprobada') {
+                const configuracion = await mongoose.model('ConfiguracionSistema')
+                    .findOne({ claveConfig: 'montoMaximoAprobacionAnalista' })
+                    .session(session);
+                const montoMaximoAnalista = configuracion ? Number(configuracion.valorConfig) : 0;
+                if (!Number.isFinite(montoMaximoAnalista) || montoMaximoAnalista < 0) {
+                    const err = new Error('El umbral de aprobación de analistas no está configurado correctamente');
+                    err.status = 409;
+                    throw err;
+                }
+                const requiereAprobacionFinal = Math.max(montoAprobado, solicitud.montoSolicitado) > montoMaximoAnalista ||
+                    Boolean(motivoExcepcion?.trim());
+                if (requiereAprobacionFinal) {
+                    const usuario = await mongoose.model('Usuario').findById(usuarioId)
+                        .populate({ path: 'roles', populate: { path: 'permisos' } })
+                        .session(session);
+                    const puedeAprobarMontoAlto = usuario?.roles?.some((rol) =>
+                        rol.permisos?.some((permiso) =>
+                            permiso.modulo === 'solicitudes_credito' &&
+                            permiso.nombreAccion === 'decidir_monto_alto'
+                        )
+                    );
+                    if (!puedeAprobarMontoAlto) {
+                        const err = new Error('Esta solicitud requiere aprobación final de un administrador');
+                        err.status = 403;
+                        throw err;
+                    }
+                }
+            }
 
             [decisionCreada] = await mongoose.model('DecisionCredito').create([{
                 solicitudId,
                 evaluacionId: evaluacion._id,
                 aprobadoPor: usuarioId,
+                estado,
                 ...(estado === 'aprobada' ? { montoAprobado } : {}),
-                razonDecision
+                razonDecision,
+                ...(motivoExcepcion ? { motivoExcepcion: motivoExcepcion.trim() } : {}),
+                ...(estado === 'condicionada' ? { condiciones: condiciones.trim() } : {})
             }], { session });
             solicitud.estado = estado;
             await solicitud.save({ session });

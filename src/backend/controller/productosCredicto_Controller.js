@@ -50,16 +50,19 @@ export async function actualizarProducto(req, res) {
         const { id } = req.params;
         const datos = req.body ?? {};
         if (!esObjectId(id)) return res.status(400).json({ message: 'ID de producto inválido' });
-        const error = validarProducto(datos);
-        if (error) return res.status(400).json({ message: error });
         const actual = await productos.getProductoCredito({ _id: id });
         if (!actual) return res.status(404).json({ message: 'Producto no encontrado' });
+        const error = validarProducto({ ...actual.toObject(), ...datos });
         const minimo = datos.montoMinimo ?? actual.montoMinimo;
         const maximo = datos.montoMaximo ?? actual.montoMaximo;
-        if (maximo < minimo) return res.status(400).json({ message: 'El monto máximo debe ser mayor o igual al mínimo' });
         const cambios = Object.fromEntries(Object.entries(datos).filter(([key]) =>
-            ['nombre', 'tasaInteresAnual', 'plazoMaximosMeses', 'montoMinimo', 'montoMaximo'].includes(key)
+            ['nombre', 'tasaInteresAnual', 'tipoTasa', 'sistemaAmortizacion', 'frecuenciaPago',
+                'tipoMora', 'multaMoraFija', 'multaMoraPorcentaje', 'multaMoraTope',
+                'diasGracia', 'plazoMaximosMeses', 'montoMinimo', 'montoMaximo'].includes(key)
         ));
+
+        if (error) return res.status(400).json({ message: error });
+        if (maximo < minimo) return res.status(400).json({ message: 'El monto máximo debe ser mayor o igual al mínimo' });
         if (!Object.keys(cambios).length) return res.status(400).json({ message: 'No hay campos permitidos para actualizar' });
         const producto = await productos.actualizarProductoCredito(id, { $set: cambios });
         return res.status(200).json({ message: 'Producto actualizado', producto });

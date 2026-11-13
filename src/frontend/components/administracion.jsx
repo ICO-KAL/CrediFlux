@@ -1,8 +1,30 @@
 import TabbedResourceSection from './TabbedResourceSection.jsx'
 import { Badge, formatDate } from './ui.jsx'
-import { createPermiso, createRol, listPermisos, listRoles, listUsuarios } from '../services/dashboardApi.js'
+import {
+  createPermiso,
+  createRol,
+  listPermisos,
+  listRoles,
+  listUsuarios,
+  updateRol,
+  updateEstadoUsuario,
+  updateRolesUsuario,
+} from '../services/dashboardApi.js'
 
 const fecha = { key: 'createdAt', label: 'Creado', render: (row) => formatDate(row.createdAt) }
+
+const opcionesRoles = async () => {
+  const { items } = await listRoles({ limit: 100 })
+  return items.map((rol) => ({ value: rol._id, label: rol.nombre }))
+}
+
+const opcionesPermisos = async () => {
+  const { items } = await listPermisos({ limit: 100 })
+  return items.map((permiso) => ({
+    value: permiso._id,
+    label: `${permiso.modulo} / ${permiso.nombreAccion}`,
+  }))
+}
 
 const tabs = {
   usuarios: {
@@ -25,6 +47,32 @@ const tabs = {
       { key: 'activo', label: 'Estado', render: (row) => <Badge value={row.activo ? 'activo' : 'inactivo'} tone={row.activo ? 'good' : 'bad'} /> },
       fecha,
     ],
+    editConfig: {
+      actionLabel: 'Asignar roles',
+      eyebrow: 'ACCESO DE USUARIO',
+      title: 'Asignar o revocar roles',
+      successMessage: 'Roles del usuario actualizados correctamente.',
+      submitLabel: 'Guardar roles',
+      submit: (payload, usuario) => updateRolesUsuario(usuario._id, payload.roles),
+      fields: [
+        { name: 'roles', label: 'Roles asignados (selecciona varios)', type: 'multiselect', loadOptions: opcionesRoles },
+      ],
+    },
+    rowActions: [
+      {
+        label: 'Desactivar',
+        danger: true,
+        confirm: '¿Desactivar esta cuenta? Se bloqueará el acceso actual y futuro a la API.',
+        onClick: (usuario) => updateEstadoUsuario(usuario._id, false),
+        show: (usuario) => usuario.activo,
+      },
+      {
+        label: 'Activar',
+        confirm: '¿Reactivar esta cuenta?',
+        onClick: (usuario) => updateEstadoUsuario(usuario._id, true),
+        show: (usuario) => !usuario.activo,
+      },
+    ],
   },
   roles: {
     label: 'Roles',
@@ -37,6 +85,7 @@ const tabs = {
       fields: [
         { name: 'nombre', label: 'Nombre', required: true },
         { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+        { name: 'permisos', label: 'Permisos iniciales (selecciona varios)', type: 'multiselect', loadOptions: opcionesPermisos },
       ],
     },
     columns: [
@@ -45,6 +94,19 @@ const tabs = {
       { key: 'permisos', label: 'Permisos', align: 'right', render: (row) => (row.permisos || []).length },
       fecha,
     ],
+    editConfig: {
+      actionLabel: 'Editar permisos',
+      eyebrow: 'PERMISOS DEL ROL',
+      title: 'Actualizar rol',
+      successMessage: 'Rol actualizado correctamente.',
+      submitLabel: 'Guardar rol',
+      submit: (payload, rol) => updateRol(rol._id, payload),
+      fields: [
+        { name: 'nombre', label: 'Nombre', required: true },
+        { name: 'descripcion', label: 'Descripción', type: 'textarea' },
+        { name: 'permisos', label: 'Permisos (selecciona varios)', type: 'multiselect', loadOptions: opcionesPermisos },
+      ],
+    },
   },
   permisos: {
     label: 'Permisos',

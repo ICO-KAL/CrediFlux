@@ -4,10 +4,11 @@ const solicitudCreditoSchema = new mongoose.Schema({
   clienteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', required: true, index: true },
   productoCreditoId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductoCredito', required: true },
   montoSolicitado: { type: Number, required: true, min: 0.01 },
+  destino: { type: String, required: true, trim: true, maxlength: 500 },
   plazoSolicitadoMeses: { type: Number, required: true, min: 1, validate: Number.isInteger },
   estado: {
     type: String,
-    enum: ['pendiente', 'en_revision', 'aprobada', 'rechazada', 'cancelada'],
+    enum: ['pendiente', 'en_revision', 'condicionada', 'aprobada', 'rechazada', 'cancelada'],
     default: 'pendiente',
     required: true
   }

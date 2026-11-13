@@ -9,36 +9,54 @@ import * as seguimiento from './seguimiento_controller.js';
 
 export const listarDesembolsos = seguimiento.listarDesembolsos;
 
-export function crearCuotasFrancesas(prestamo, tasaAnual, fechaPrimerPago) {
+const periodosPorAno = { mensual: 12, quincenal: 26, semanal: 52 };
+
+function fechaCuota(fechaPrimerPago, indice, frecuenciaPago) {
+    if (frecuenciaPago === 'mensual') return sumarMesesConTope(fechaPrimerPago, indice);
+    const diasPorPeriodo = frecuenciaPago === 'semanal' ? 7 : 14;
+    return new Date(fechaPrimerPago.getTime() + indice * diasPorPeriodo * 24 * 60 * 60 * 1000);
+}
+
+export function crearCuotasAmortizacion(prestamo, tasaAnual, fechaPrimerPago) {
     const principalCentavos = Math.round(prestamo.montoPrincipal * 100);
-    const cantidadCuotas = prestamo.plazoMeses;
-    const tasaMensual = tasaAnual / 100 / 12;
-    const cuotaRegularCentavos = tasaMensual === 0
+    const frecuenciaPago = prestamo.frecuenciaPago || 'mensual';
+    const sistemaAmortizacion = prestamo.sistemaAmortizacion || 'frances';
+    const periodosAnuales = periodosPorAno[frecuenciaPago];
+    const cantidadCuotas = Math.round(prestamo.plazoMeses * periodosAnuales / 12);
+    const tasaPeriodo = tasaAnual / 100 / periodosAnuales;
+    const cuotaRegularCentavos = tasaPeriodo === 0
         ? Math.round(principalCentavos / cantidadCuotas)
         : Math.round(
-            ((principalCentavos / 100) * tasaMensual /
-                (1 - (1 + tasaMensual) ** -cantidadCuotas)) * 100
+            ((principalCentavos / 100) * tasaPeriodo /
+                (1 - (1 + tasaPeriodo) ** -cantidadCuotas)) * 100
         );
+    const capitalRegularCentavos = Math.round(principalCentavos / cantidadCuotas);
 
     if (!Number.isSafeInteger(principalCentavos) || principalCentavos <= 0 ||
-        !Number.isSafeInteger(cuotaRegularCentavos) || cuotaRegularCentavos <= 0) {
+        !Number.isSafeInteger(cantidadCuotas) || cantidadCuotas < 1 ||
+        !Number.isFinite(tasaPeriodo) || tasaPeriodo < 0 ||
+        !Number.isSafeInteger(cuotaRegularCentavos) || cuotaRegularCentavos <= 0 ||
+        !Number.isSafeInteger(capitalRegularCentavos) || capitalRegularCentavos <= 0 ||
+        !['frances', 'aleman'].includes(sistemaAmortizacion)) {
         throw errorPlanAmortizacion('El principal o la cuota calculada están fuera del rango monetario permitido');
     }
 
     let saldoCentavos = principalCentavos;
     const cuotas = [];
     for (let indice = 0; indice < cantidadCuotas; indice += 1) {
-        const interesCentavos = Math.round(saldoCentavos * tasaMensual);
+        const interesCentavos = Math.round(saldoCentavos * tasaPeriodo);
         const capitalCentavos = indice === cantidadCuotas - 1
             ? saldoCentavos
-            : cuotaRegularCentavos - interesCentavos;
+            : sistemaAmortizacion === 'aleman'
+                ? capitalRegularCentavos
+                : cuotaRegularCentavos - interesCentavos;
 
         if (!Number.isSafeInteger(interesCentavos) || interesCentavos < 0 ||
             capitalCentavos <= 0 || capitalCentavos > saldoCentavos) {
             throw errorPlanAmortizacion('La cuota no amortiza el principal; revisa la tasa y el plazo');
         }
 
-        const fechaVencimiento = sumarMesesConTope(fechaPrimerPago, indice);
+        const fechaVencimiento = fechaCuota(fechaPrimerPago, indice, frecuenciaPago);
         const montoCapital = capitalCentavos / 100;
         const montoInteres = interesCentavos / 100;
         cuotas.push({
@@ -56,6 +74,14 @@ export function crearCuotasFrancesas(prestamo, tasaAnual, fechaPrimerPago) {
 
     if (saldoCentavos !== 0) throw errorPlanAmortizacion('El plan no amortiza el principal completo');
     return cuotas;
+}
+
+export function crearCuotasFrancesas(prestamo, tasaAnual, fechaPrimerPago) {
+    return crearCuotasAmortizacion({
+        ...prestamo,
+        sistemaAmortizacion: 'frances',
+        frecuenciaPago: 'mensual'
+    }, tasaAnual, fechaPrimerPago);
 }
 
 export async function registrarDesembolso(req, res) {
@@ -129,10 +155,12 @@ export async function registrarDesembolso(req, res) {
                 metodoPago,
                 referenciaBancaria
             }], { session });
-            const cuotas = crearCuotasFrancesas(prestamo, prestamo.tasaInteres, primeraFecha);
+            const cuotas = crearCuotasAmortizacion(prestamo, prestamo.tasaInteres, primeraFecha);
             await mongoose.model('Cuota').create(cuotas, { session });
             await mongoose.model('PlanAmortizacion').create([{
                 prestamoId: prestamo._id,
+                sistemaAmortizacion: prestamo.sistemaAmortizacion || 'frances',
+                frecuenciaPago: prestamo.frecuenciaPago || 'mensual',
                 cuotasIds: cuotas.map((cuota) => cuota._id)
             }], { session });
             await mongoose.model('TransaccionFinanciera').create([{
@@ -143,7 +171,7 @@ export async function registrarDesembolso(req, res) {
             }], { session });
         });
         return res.status(201).json({
-            message: 'Desembolso registrado y plan de amortización francés generado',
+            message: 'Desembolso registrado y plan de amortización generado',
             desembolso
         });
     } catch (error) {
