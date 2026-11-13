@@ -11,7 +11,8 @@ const cuotaColumns = [
   { key: 'numeroCuota', label: 'Cuota', render: (row) => `N.º ${row.numeroCuota}` },
   { key: 'montoCapital', label: 'Capital', align: 'right', render: (row) => formatMoney(row.montoCapital) },
   { key: 'montoInteres', label: 'Interés', align: 'right', render: (row) => formatMoney(row.montoInteres) },
-  { key: 'montoTotal', label: 'Total', align: 'right', render: (row) => <span className="font-semibold text-white">{formatMoney(row.montoTotal)}</span> },
+  { key: 'montoPenalizacionMora', label: 'Mora', align: 'right', render: (row) => formatMoney(row.montoPenalizacionMora || 0) },
+  { key: 'montoTotalConMora', label: 'Total', align: 'right', render: (row) => <span className="font-semibold text-white">{formatMoney(row.montoTotalConMora ?? row.montoTotal)}</span> },
   { key: 'fechaVencimiento', label: 'Vence', render: (row) => formatDate(row.fechaVencimiento) },
   { key: 'estado', label: 'Estado', render: (row) => <Badge value={row.estado} /> },
 ]

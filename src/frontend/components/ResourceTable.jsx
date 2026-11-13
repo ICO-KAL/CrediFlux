@@ -43,6 +43,24 @@ function FieldInput({ field, value, onChange }) {
     )
   }
 
+  if (field.type === 'multiselect') {
+    return (
+      <>
+        <select
+          className={`${inputClass} min-h-28`}
+          multiple
+          value={Array.isArray(value) ? value : []}
+          onChange={(event) => onChange(Array.from(event.target.selectedOptions, (option) => option.value))}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        {loadError && <span className="text-[#f08c7e]" role="alert">{loadError} Cierra y vuelve a abrir el formulario para reintentar.</span>}
+      </>
+    )
+  }
+
   if (field.type === 'textarea') {
     return (
       <textarea className={`${inputClass} min-h-[84px] resize-y`} value={value} onChange={(event) => onChange(event.target.value)} required={field.required} placeholder={field.placeholder} />
@@ -64,7 +82,7 @@ function FieldInput({ field, value, onChange }) {
   )
 }
 
-export function FormModal({ open, config, onClose, onSaved }) {
+export function FormModal({ open, config, initialValues, onClose, onSaved }) {
   const { notify } = useDashboard()
   const [values, setValues] = useState({})
   const [saving, setSaving] = useState(false)
@@ -72,10 +90,15 @@ export function FormModal({ open, config, onClose, onSaved }) {
 
   useEffect(() => {
     if (open) {
-      setValues(Object.fromEntries(config.fields.map((field) => [field.name, field.defaultValue ?? ''])))
+      setValues(Object.fromEntries(config.fields.map((field) => [
+        field.name,
+        field.type === 'multiselect'
+          ? (initialValues?.[field.name] || []).map((item) => item && typeof item === 'object' ? item._id : item)
+          : initialValues?.[field.name] ?? field.defaultValue ?? '',
+      ])))
       setError('')
     }
-  }, [open, config])
+  }, [open, config, initialValues])
 
   const submit = async (event) => {
     event.preventDefault()
@@ -88,7 +111,7 @@ export function FormModal({ open, config, onClose, onSaved }) {
         if (raw === '' || raw === undefined) return
         payload[field.name] = field.type === 'number' ? Number(raw) : raw
       })
-      await config.submit(payload)
+      await config.submit(payload, initialValues)
       notify(config.successMessage || 'Registro guardado correctamente.', 'success')
       onSaved()
       onClose()
@@ -104,7 +127,7 @@ export function FormModal({ open, config, onClose, onSaved }) {
       <form onSubmit={submit} className="rounded-2xl border border-[rgba(183,243,221,0.14)] bg-[#0b2a23] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <p className="text-[9px] font-bold tracking-[1.6px] text-[#89d8b8]">NUEVO REGISTRO</p>
+            <p className="text-[9px] font-bold tracking-[1.6px] text-[#89d8b8]">{config.eyebrow || 'NUEVO REGISTRO'}</p>
             <h3 className="mt-1 text-[20px] font-semibold text-white">{config.title}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="Cerrar" className="grid size-8 place-items-center rounded-full text-[#a9c9bb] hover:bg-[rgba(183,243,221,0.08)]">
@@ -125,7 +148,7 @@ export function FormModal({ open, config, onClose, onSaved }) {
 
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" className={buttonGhost} onClick={onClose}>Cancelar</button>
-          <button type="submit" className={buttonPrimary} disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
+          <button type="submit" className={buttonPrimary} disabled={saving}>{saving ? 'Guardando…' : config.submitLabel || 'Guardar'}</button>
         </div>
       </form>
     </ModalAnimation>
@@ -159,6 +182,7 @@ export default function ResourceTable({
   columns,
   filters = [],
   createConfig,
+  editConfig,
   rowActions = [],
   pageSize = 10,
   embedded = false,
@@ -168,6 +192,7 @@ export default function ResourceTable({
   const [page, setPage] = useState(1)
   const [filterValues, setFilterValues] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingRow, setEditingRow] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [tick, setTick] = useState(0)
 
@@ -191,6 +216,11 @@ export default function ResourceTable({
   const pages = Math.max(1, Math.ceil(state.total / pageSize))
 
   const runAction = async (action, row) => {
+    if (action.edit) {
+      setEditingRow(row)
+      setModalOpen(true)
+      return
+    }
     if (action.confirm && !window.confirm(action.confirm)) return
     setBusyId(row._id)
     try {
@@ -204,6 +234,15 @@ export default function ResourceTable({
     }
   }
 
+  const actions = editConfig
+    ? [...rowActions, { label: editConfig.actionLabel || 'Editar', edit: true }]
+    : rowActions
+  const modalConfig = editingRow ? editConfig : createConfig
+  const closeModal = () => {
+    setModalOpen(false)
+    setEditingRow(null)
+  }
+
   return (
     <div>
       {!embedded && (
@@ -212,7 +251,7 @@ export default function ResourceTable({
             <Icon name="refresh" className="size-4" /> Actualizar
           </button>
           {createConfig && (
-            <button type="button" className={buttonPrimary} onClick={() => setModalOpen(true)}>
+            <button type="button" className={buttonPrimary} onClick={() => { setEditingRow(null); setModalOpen(true) }}>
               <Icon name="plus" className="size-4" /> {createConfig.label}
             </button>
           )}
@@ -222,7 +261,7 @@ export default function ResourceTable({
       {embedded && (filters.length > 0 || createConfig) && (
         <div className="mb-4 flex justify-end gap-2">
           {createConfig && (
-            <button type="button" className={buttonPrimary} onClick={() => setModalOpen(true)}>
+            <button type="button" className={buttonPrimary} onClick={() => { setEditingRow(null); setModalOpen(true) }}>
               <Icon name="plus" className="size-4" /> {createConfig.label}
             </button>
           )}
@@ -266,7 +305,7 @@ export default function ResourceTable({
                   {columns.map((column) => (
                     <th key={column.key} className={`px-5 py-3.5 ${column.align === 'right' ? 'text-right' : ''}`}>{column.label.toUpperCase()}</th>
                   ))}
-                  {rowActions.length > 0 && <th className="px-5 py-3.5 text-right">ACCIONES</th>}
+                  {actions.length > 0 && <th className="px-5 py-3.5 text-right">ACCIONES</th>}
                 </tr>
               </thead>
               <Stagger as="tbody" key={`${page}-${filterKey}-${tick}`}>
@@ -277,10 +316,10 @@ export default function ResourceTable({
                         {column.render ? column.render(row) : (row[column.key] ?? '—')}
                       </td>
                     ))}
-                    {rowActions.length > 0 && (
+                    {actions.length > 0 && (
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex justify-end gap-2">
-                          {rowActions.filter((action) => !action.show || action.show(row)).map((action) => (
+                          {actions.filter((action) => !action.show || action.show(row)).map((action) => (
                             <button
                               key={action.label}
                               type="button"
@@ -312,8 +351,14 @@ export default function ResourceTable({
         )}
       </Card>
 
-      {createConfig && (
-        <FormModal open={modalOpen} config={createConfig} onClose={() => setModalOpen(false)} onSaved={reload} />
+      {modalConfig && (
+        <FormModal
+          open={modalOpen}
+          config={modalConfig}
+          initialValues={editingRow}
+          onClose={closeModal}
+          onSaved={reload}
+        />
       )}
     </div>
   )

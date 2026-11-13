@@ -119,36 +119,15 @@ export async function renovarSesion(req, res) {
 export async function cerrarSesion(req, res) {
     try {
         const { id: usuarioId, sid: sesionId } = req.usuario ?? {};
-        const alcance = req.route.path;
-        if (!esObjectId(usuarioId) || (alcance !== '/sessions/logout-all' && !esObjectId(sesionId))) {
-            return res.status(401).json({
-                message: alcance === '/sessions/logout-all'
-                    ? 'El token de acceso no contiene un usuario válido'
-                    : 'El token de acceso no contiene una sesión válida'
-            });
+        if (!esObjectId(usuarioId) || !esObjectId(sesionId)) {
+            return res.status(401).json({ message: 'El token de acceso no contiene una sesión válida' });
         }
-        const filtro = { usuarioId };
-        if (alcance === '/sessions/logout') filtro._id = sesionId;
-        else if (alcance === '/sessions/logout-others') filtro._id = { $ne: sesionId };
-        else if (alcance !== '/sessions/logout-all') {
-            return res.status(400).json({ message: 'Acción de cierre de sesión inválida' });
-        }
-        const cerradas = await sesiones.eliminarSesion(filtro);
-        if (alcance === '/sessions/logout') {
-            return res.status(200).json({ message: 'Sesión cerrada' });
-        }
-        return res.status(200).json({
-            message: alcance === '/sessions/logout-all' ? 'Se cerraron todas las sesiones' : 'Se cerraron las otras sesiones',
-            sesionesCerradas: cerradas.deletedCount
-        });
+
+        await sesiones.eliminarSesion({ usuarioId });
+        return res.status(200).json({ message: 'Sesión cerrada en todos los dispositivos' });
     } catch (error) {
-        const mensaje = req.route.path === '/sessions/logout-all'
-            ? 'Error al cerrar todas las sesiones'
-            : req.route.path === '/sessions/logout-others'
-                ? 'Error al cerrar otras sesiones'
-                : 'Error al cerrar la sesión';
-        console.error(mensaje, error);
-        return res.status(500).json({ message: mensaje });
+        console.error('Error al cerrar la sesión', error);
+        return res.status(500).json({ message: 'Error al cerrar la sesión' });
     }
 }
 

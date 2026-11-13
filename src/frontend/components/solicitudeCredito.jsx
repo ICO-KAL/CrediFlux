@@ -9,6 +9,7 @@ const columns = [
   idColumn,
   clienteColumn,
   { key: 'montoSolicitado', label: 'Monto', align: 'right', render: (row) => formatMoney(row.montoSolicitado) },
+  { key: 'destino', label: 'Destino', render: (row) => <span className="line-clamp-1 max-w-[220px]" title={row.destino}>{row.destino || '—'}</span> },
   { key: 'plazoSolicitadoMeses', label: 'Plazo', render: (row) => `${row.plazoSolicitadoMeses} meses` },
   estadoColumn,
   fechaCreacionColumn,
@@ -18,7 +19,7 @@ const filters = [
   {
     key: 'estado',
     label: 'Estado',
-    options: optionsFromValues(['pendiente', 'en_revision', 'aprobada', 'rechazada', 'cancelada'], (value) => value.replace('_', ' ')),
+    options: optionsFromValues(['pendiente', 'en_revision', 'condicionada', 'aprobada', 'rechazada', 'cancelada'], (value) => value.replace('_', ' ')),
   },
 ]
 

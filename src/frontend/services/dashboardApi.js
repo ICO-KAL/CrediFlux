@@ -10,6 +10,8 @@ export const createCliente = create('/clientes')
 
 export const listProductos = list('/productos-credito', 'productos')
 export const createProducto = create('/productos-credito')
+export const updateProducto = (id, body) =>
+  request(`/productos-credito/${id}`, { method: 'PUT', body })
 
 export const listSolicitudes = list('/solicitudes-credito', 'solicitudes')
 export const createSolicitud = create('/solicitudes-credito')
@@ -19,6 +21,8 @@ export const cancelarSolicitud = (id) =>
   request(`/solicitudes-credito/${id}`, { method: 'PATCH' })
 
 export const listPrestamos = list('/prestamos', 'prestamos')
+export const getMetricasCartera = () =>
+  request('/prestamos/metricas-cartera').then((data) => data.metricas)
 export const createPrestamoDesdeSolicitud = create('/prestamos')
 
 export const listCuotas = list('/cuotas', 'cuotas')
@@ -68,8 +72,13 @@ export const eliminarNotificacion = (id) =>
   request(`/notificaciones/${id}`, { method: 'DELETE' })
 
 export const listUsuarios = list('/usuarios-admin', 'usuarios')
+export const updateEstadoUsuario = (id, activo) =>
+  request(`/usuarios-admin/${id}/estado`, { method: 'PATCH', body: { activo } })
 export const listRoles = list('/roles', 'roles')
 export const createRol = create('/roles')
+export const updateRol = (id, body) => request(`/roles/${id}`, { method: 'PUT', body })
+export const updateRolesUsuario = (id, roles) =>
+  request(`/usuarios-admin/${id}/roles`, { method: 'PUT', body: { roles } })
 export const listPermisos = list('/permisos', 'permisos')
 export const createPermiso = create('/permisos')
 
@@ -78,6 +87,8 @@ export const listIncidencias = list('/incidencias-riesgo', 'incidencias')
 export const createIncidencia = create('/incidencias-riesgo')
 export const listConfiguraciones = list('/configuracion-sistema', 'configuraciones')
 export const createConfiguracion = create('/configuracion-sistema')
+export const updateConfiguracion = (id, body) =>
+  request(`/configuracion-sistema/${id}`, { method: 'PUT', body })
 
 // Datos agregados del panel principal; cada bloque falla de forma independiente.
 export async function loadDashboardSnapshot() {
@@ -85,6 +96,7 @@ export async function loadDashboardSnapshot() {
   const sources = {
     clientes: listClientes(query),
     prestamos: listPrestamos(query),
+    metricasCartera: getMetricasCartera(),
     solicitudes: listSolicitudes(query),
     pagos: listPagos(query),
     desembolsos: listDesembolsos(query),

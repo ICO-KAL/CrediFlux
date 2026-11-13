@@ -12,7 +12,6 @@ import ToastAnimation from './animation/ToastAnimation.jsx'
 import {
   AuthApiError,
   loginWithApi,
-  logoutAllWithApi,
   logoutWithApi,
   refreshWithApi,
   registerWithApi,
@@ -280,19 +279,18 @@ function App() {
     }
   }
 
-  const logoutUser = async (all = false) => {
+  const logoutUser = async () => {
     if (!session) return
 
     try {
       if (refreshPromiseRef.current) await refreshPromiseRef.current
-      const logout = all ? logoutAllWithApi : logoutWithApi
       try {
-        await logout(sessionRef.current.token)
+        await logoutWithApi(sessionRef.current.token)
       } catch (error) {
         if (!(error instanceof AuthApiError) || error.status !== 401) throw error
         const token = await refreshSession()
         if (!token) return
-        await logout(token)
+        await logoutWithApi(token)
       }
     } catch (error) {
       if (!(error instanceof AuthApiError) || error.status !== 401) showToast(error.message || 'No se pudo cerrar la sesión.')
@@ -310,14 +308,14 @@ function App() {
     setSession(null)
     setLoginSuccess(false)
     setRememberSession(false)
-    showToast('Sesión cerrada correctamente.', 'success')
+    showToast('Sesión cerrada en este y los demás dispositivos.', 'success')
   }
 
   if (session && loginSuccess) {
     return (
       <>
         <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#06201a] text-[11px] text-[#6f8f82]">Cargando tu panel…</div>}>
-          <Dashboard session={session} onLogout={() => logoutUser()} onLogoutAll={() => logoutUser(true)} notify={showToast} />
+          <Dashboard session={session} onLogout={logoutUser} notify={showToast} />
         </Suspense>
         <ToastAnimation toast={toast}>
           {toast && (

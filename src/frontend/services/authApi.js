@@ -58,7 +58,3 @@ export function logoutWithApi(token) {
     token,
   })
 }
-
-export function logoutAllWithApi(token) {
-  return request('/sessions/logout-all', { method: 'POST', token })
-}

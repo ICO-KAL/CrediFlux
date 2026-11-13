@@ -8,6 +8,7 @@ import {
   listAuditoria,
   listConfiguraciones,
   listIncidencias,
+  updateConfiguracion,
 } from '../services/dashboardApi.js'
 
 const fecha = { key: 'createdAt', label: 'Fecha', render: (row) => formatDateTime(row.createdAt) }
@@ -59,6 +60,18 @@ const tabs = {
         { name: 'valorConfig', label: 'Valor', type: 'textarea', required: true },
       ],
     },
+    editConfig: {
+      actionLabel: 'Editar',
+      eyebrow: 'PARÁMETRO DEL SISTEMA',
+      title: 'Actualizar parámetro',
+      successMessage: 'Configuración actualizada correctamente.',
+      submitLabel: 'Guardar cambios',
+      submit: (payload, configuracion) => updateConfiguracion(configuracion._id, payload),
+      fields: [
+        { name: 'claveConfig', label: 'Clave', required: true },
+        { name: 'valorConfig', label: 'Valor', type: 'textarea', required: true },
+      ],
+    },
     columns: [
       { key: 'claveConfig', label: 'Clave', render: (row) => <span className="font-mono font-semibold text-[#89d8b8]">{row.claveConfig}</span> },
       { key: 'valorConfig', label: 'Valor', render: (row) => <span className="line-clamp-1 max-w-[420px]">{row.valorConfig}</span> },
@@ -69,6 +82,12 @@ const tabs = {
 
 export default function ReportesAuditoriaConfiguracion() {
   return (
-    <TabbedResourceSection tabs={tabs} initialTab="auditoria" eyebrow="CONTROL" title="Reportes, auditoría y configuración" />
+    <div>
+      <p className="mb-4 text-[11px] text-[#8fb3a3]">
+        El umbral para la aprobación de analistas se configura con la clave <code className="text-[#b6f3dd]">montoMaximoAprobacionAnalista</code>.
+        El valor es un monto en DOP; si no existe, toda aprobación requiere permiso de administrador.
+      </p>
+      <TabbedResourceSection tabs={tabs} initialTab="auditoria" eyebrow="CONTROL" title="Reportes, auditoría y configuración" />
+    </div>
   )
 }

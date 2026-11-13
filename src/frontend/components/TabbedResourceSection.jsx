@@ -21,6 +21,8 @@ export default function TabbedResourceSection({ tabs, initialTab, eyebrow, title
         columns={current.columns}
         filters={current.filters}
         createConfig={current.createConfig}
+        editConfig={current.editConfig}
+        rowActions={current.rowActions}
       />
     </div>
   )

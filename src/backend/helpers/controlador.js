@@ -50,12 +50,50 @@ export function responderError(res, error, mensaje, { soloInterno = false } = {}
 }
 
 export function validarProducto(datos) {
-    const { nombre, tasaInteresAnual, plazoMaximosMeses, montoMinimo, montoMaximo } = datos;
+    const {
+        nombre, tasaInteresAnual, tipoTasa, sistemaAmortizacion, frecuenciaPago,
+        tipoMora, multaMoraFija, multaMoraPorcentaje, multaMoraTope,
+        diasGracia, plazoMaximosMeses, montoMinimo, montoMaximo
+    } = datos;
     if (nombre !== undefined && (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 150)) {
         return 'Nombre inválido';
     }
     if (tasaInteresAnual !== undefined && (typeof tasaInteresAnual !== 'number' || !Number.isFinite(tasaInteresAnual) || tasaInteresAnual < 0)) {
         return 'La tasa anual debe ser un número mayor o igual a cero';
+    }
+    if (tipoTasa !== undefined && !['fija', 'variable'].includes(tipoTasa)) {
+        return 'El tipo de tasa debe ser fija o variable';
+    }
+    if (sistemaAmortizacion !== undefined && !['frances', 'aleman'].includes(sistemaAmortizacion)) {
+        return 'El sistema de amortización debe ser francés o alemán';
+    }
+    if (frecuenciaPago !== undefined && !['mensual', 'quincenal', 'semanal'].includes(frecuenciaPago)) {
+        return 'La frecuencia de pago debe ser mensual, quincenal o semanal';
+    }
+    if (tipoMora !== undefined && !['fija', 'porcentual'].includes(tipoMora)) {
+        return 'El tipo de mora debe ser fija o porcentual';
+    }
+    if (multaMoraFija !== undefined &&
+        (typeof multaMoraFija !== 'number' || !Number.isFinite(multaMoraFija) || multaMoraFija < 0 ||
+            Math.abs(multaMoraFija * 100 - Math.round(multaMoraFija * 100)) > 1e-8)) {
+        return 'La penalización fija debe ser un importe no negativo con hasta dos decimales';
+    }
+    if (multaMoraPorcentaje !== undefined &&
+        (typeof multaMoraPorcentaje !== 'number' || !Number.isFinite(multaMoraPorcentaje) ||
+            multaMoraPorcentaje < 0)) {
+        return 'El porcentaje de mora debe ser un número no negativo';
+    }
+    if (multaMoraTope !== undefined &&
+        (typeof multaMoraTope !== 'number' || !Number.isFinite(multaMoraTope) || multaMoraTope < 0 ||
+            Math.abs(multaMoraTope * 100 - Math.round(multaMoraTope * 100)) > 1e-8)) {
+        return 'El tope de mora debe ser un importe no negativo con hasta dos decimales';
+    }
+    if (tipoMora === 'porcentual' &&
+        (!(multaMoraPorcentaje > 0) || !(multaMoraTope > 0))) {
+        return 'La mora porcentual requiere un porcentaje y un tope mayores que cero';
+    }
+    if (diasGracia !== undefined && (!Number.isInteger(diasGracia) || diasGracia < 0)) {
+        return 'Los días de gracia deben ser un entero no negativo';
     }
     if (plazoMaximosMeses !== undefined && (!Number.isInteger(plazoMaximosMeses) || plazoMaximosMeses < 1)) {
         return 'El plazo máximo debe ser un entero mayor que cero';

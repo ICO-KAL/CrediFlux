@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 const asignacionPagoSchema = new mongoose.Schema({
   pagoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pago', required: true, index: true },
   cuotaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cuota', required: true, index: true },
-  montoAplicado: { type: Number, required: true, min: 0.01 }
+  montoAplicado: { type: Number, required: true, min: 0.01 },
+  montoPenalizacionMora: { type: Number, required: true, min: 0, default: 0 }
 }, { timestamps: true });
 
 export default mongoose.models.AsignacionPago

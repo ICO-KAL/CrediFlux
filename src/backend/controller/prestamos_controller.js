@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import prestamos from '../models/prestamo.js';
 import solicitudes from '../models/solicitud_credito.js';
 import decisiones from '../models/decision_credito.js';
+import '../models/cuota.js';
+import '../models/pago.js';
 import { esObjectId, responderError, validarPaginacion } from '../helpers/controlador.js';
 
 export async function crearPrestamoDesdeSolicitud(req, res) {
@@ -27,6 +29,14 @@ export async function crearPrestamoDesdeSolicitud(req, res) {
             solicitudId: solicitud._id,
             montoPrincipal: decision.montoAprobado,
             tasaInteres: producto.tasaInteresAnual,
+            tipoTasa: producto.tipoTasa,
+            sistemaAmortizacion: producto.sistemaAmortizacion,
+            frecuenciaPago: producto.frecuenciaPago,
+            tipoMora: producto.tipoMora,
+            multaMoraFija: producto.multaMoraFija,
+            multaMoraPorcentaje: producto.multaMoraPorcentaje,
+            multaMoraTope: producto.multaMoraTope,
+            diasGracia: producto.diasGracia,
             plazoMeses: solicitud.plazoSolicitadoMeses,
             estado: 'activo'
         });
@@ -64,5 +74,65 @@ export async function obtenerPrestamo(req, res) {
         return res.status(200).json({ prestamo });
     } catch (error) {
         return responderError(res, error, 'Error al obtener el préstamo');
+    }
+}
+
+export async function obtenerMetricasCartera(req, res) {
+    try {
+        const estadosActivos = ['activo', 'en_mora'];
+        const [prestamosActivos, totalPrestamos] = await Promise.all([
+            mongoose.model('Prestamo').find({ estado: { $in: estadosActivos } }).select('_id').lean(),
+            mongoose.model('Prestamo').countDocuments()
+        ]);
+        const idsActivos = prestamosActivos.map((prestamo) => prestamo._id);
+        const fechaLimitePar30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const saldosPorPrestamo = idsActivos.length
+            ? await mongoose.model('Cuota').aggregate([
+                {
+                    $match: {
+                        prestamoId: { $in: idsActivos },
+                        estado: { $in: ['pendiente', 'vencida'] }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$prestamoId',
+                        capitalPendiente: { $sum: '$montoCapital' },
+                        cuotasPar30: {
+                            $sum: {
+                                $cond: [{ $lte: ['$fechaVencimiento', fechaLimitePar30] }, 1, 0]
+                            }
+                        }
+                    }
+                }
+            ])
+            : [];
+        const capitalColocado = saldosPorPrestamo.reduce((total, prestamo) => total + prestamo.capitalPendiente, 0);
+        const exposicionPar30 = saldosPorPrestamo
+            .filter((prestamo) => prestamo.cuotasPar30 > 0)
+            .reduce((total, prestamo) => total + prestamo.capitalPendiente, 0);
+        const inicioDiaUtc = new Date();
+        inicioDiaUtc.setUTCHours(0, 0, 0, 0);
+        const finDiaUtc = new Date(inicioDiaUtc.getTime() + 24 * 60 * 60 * 1000);
+        const pagosHoy = await mongoose.model('Pago').aggregate([
+            { $match: { createdAt: { $gte: inicioDiaUtc, $lt: finDiaUtc } } },
+            { $group: { _id: null, total: { $sum: '$montoTotal' } } }
+        ]);
+
+        return res.status(200).json({
+            metricas: {
+                totalPrestamos,
+                prestamosActivos: prestamosActivos.length,
+                capitalColocado: Math.round(capitalColocado * 100) / 100,
+                exposicionPar30: Math.round(exposicionPar30 * 100) / 100,
+                par30Porcentaje: capitalColocado
+                    ? Math.round((exposicionPar30 / capitalColocado) * 10000) / 100
+                    : 0,
+                prestamosMoraCritica: saldosPorPrestamo.filter((prestamo) => prestamo.cuotasPar30 > 0).length,
+                cobradoHoy: Math.round((pagosHoy[0]?.total || 0) * 100) / 100
+            }
+        });
+    } catch (error) {
+        return responderError(res, error, 'Error al calcular las métricas de cartera');
     }
 }

@@ -4,12 +4,13 @@ import { credifluxdb, disconnectCredifluxdb } from '../config/credifluxDB.js';
 import '../schemes/usuarios.js';
 import '../schemes/roles.js';
 import '../schemes/permisos.js';
+import '../schemes/configuracion_sistema.js';
 
 const permisosIniciales = {
     clientes: ['crear', 'ver', 'editar'],
     direcciones: ['crear', 'ver', 'editar', 'eliminar'],
     productos_credito: ['crear', 'ver', 'editar'],
-    solicitudes_credito: ['crear', 'ver', 'editar', 'revisar', 'decidir', 'cancelar'],
+    solicitudes_credito: ['crear', 'ver', 'editar', 'revisar', 'decidir', 'decidir_monto_alto', 'cancelar'],
     prestamos: ['crear', 'ver'],
     cuotas: ['ver'],
     evaluaciones_crediticias: ['crear', 'ver'],
@@ -29,7 +30,8 @@ const permisosIniciales = {
     autorizaciones_tarjeta: ['autorizar', 'ver'],
     transacciones_financieras: ['ver'],
     roles: ['administrar'],
-    usuarios: ['administrar']
+    usuarios: ['administrar'],
+    configuracion_sistema: ['administrar']
 };
 
 async function bootstrapAdmin() {
@@ -38,6 +40,18 @@ async function bootstrapAdmin() {
 
     await credifluxdb();
     try {
+        const permisosCollection = mongoose.model('Permiso').collection;
+        const existeColeccionPermisos = await mongoose.connection.db
+            .listCollections({ name: permisosCollection.collectionName }, { nameOnly: true })
+            .hasNext();
+        if (existeColeccionPermisos) {
+            // Replace the legacy global uniqueness rule with uniqueness per module/action.
+            const indiceUnicoGlobal = (await permisosCollection.indexes())
+                .find((indice) => indice.name === 'nombreAccion_1' && indice.unique);
+            if (indiceUnicoGlobal) await permisosCollection.dropIndex(indiceUnicoGlobal.name);
+        }
+        await permisosCollection.createIndex({ modulo: 1, nombreAccion: 1 }, { unique: true });
+
         const usuario = await mongoose.model('Usuario').findOne({ email, activo: true });
         if (!usuario) throw new Error('No existe un usuario activo con BOOTSTRAP_ADMIN_EMAIL; regístralo primero');
 
@@ -65,6 +79,11 @@ async function bootstrapAdmin() {
             { _id: usuario._id },
             { $addToSet: { roles: rol._id } },
             { runValidators: true }
+        );
+        await mongoose.model('ConfiguracionSistema').findOneAndUpdate(
+            { claveConfig: 'montoMaximoAprobacionAnalista' },
+            { $setOnInsert: { valorConfig: '0' } },
+            { upsert: true, new: true, runValidators: true }
         );
         console.log(`Permisos y rol administrador asignados a ${email}`);
     } finally {

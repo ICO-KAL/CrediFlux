@@ -54,7 +54,7 @@ function buildActivity(data) {
   return events.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 9)
 }
 
-function StatCard({ icon, label, value, hint, highlight, onClick }) {
+function StatCard({ icon, label, value, hint, highlight, onClick, formatValue }) {
   return (
     <StaggerItem
       as="button"
@@ -65,14 +65,15 @@ function StatCard({ icon, label, value, hint, highlight, onClick }) {
         ? 'border-[rgba(182,243,221,0.3)] bg-[linear-gradient(135deg,#167a59,#0e5a43)] shadow-[0_18px_40px_rgba(22,122,89,0.35)]'
         : 'border-[rgba(183,243,221,0.08)] bg-[linear-gradient(160deg,rgba(18,63,51,0.55),rgba(9,43,36,0.75))]'}`}
     >
-      <span className="absolute -right-6 -top-6 size-24 rounded-full border border-[rgba(183,243,221,0.1)]" />
-      <div className="flex items-start justify-between">
-        <p className="text-[40px] font-semibold leading-none tracking-[-2px] text-white">
-          <CountUp value={value} />
-        </p>
+      <span className="pointer-events-none absolute -right-2.5 -top-2.5 grid size-24 place-items-center rounded-full border border-[rgba(183,243,221,0.1)]">
         <span className="grid size-9 place-items-center rounded-xl bg-[rgba(183,243,221,0.1)] text-[#b6f3dd]">
           <Icon name={icon} />
         </span>
+      </span>
+      <div className="min-h-9 pr-12">
+        <p className="min-w-0 text-[40px] font-semibold leading-none tracking-[-2px] text-white [overflow-wrap:anywhere]">
+          <CountUp value={value} format={formatValue} />
+        </p>
       </div>
       <p className="mt-4 text-[12px] font-semibold text-[#d6eadf]">{label}</p>
       <p className="mt-0.5 text-[10px] text-[#8fb3a3]">{hint}</p>
@@ -109,7 +110,8 @@ export default function PanelPrincipal({ onNavigate }) {
       cobros: sumByMonth(data.pagos.items, months, 'montoTotal'),
       desembolsos: sumByMonth(data.desembolsos.items, months, 'montoDesembolsado'),
       solicitudes,
-      activos: prestamos.activo || 0,
+      activos: data.metricasCartera?.prestamosActivos ?? prestamos.activo ?? 0,
+      totalPrestamos: data.metricasCartera?.totalPrestamos ?? data.prestamos.total,
       pendientes: (solicitudes.pendiente || 0) + (solicitudes.en_revision || 0),
       sinLeer: data.notificaciones.items.filter((item) => !item.leida).length,
       carteraSana: totalPrestamos ? Math.round((((prestamos.activo || 0) + (prestamos.saldado || 0)) / totalPrestamos) * 100) : 0,
@@ -144,9 +146,40 @@ export default function PanelPrincipal({ onNavigate }) {
         <div className="grid min-w-0 gap-5">
           <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard highlight icon="users" label="Clientes" value={data.clientes.total} hint="Clientes registrados" onClick={() => onNavigate('clientes')} />
-            <StatCard icon="wallet" label="Préstamos activos" value={view.activos} hint={`${data.prestamos.total} préstamos en total`} onClick={() => onNavigate('prestamos')} />
+            <StatCard icon="wallet" label="Préstamos activos" value={view.activos} hint={`${view.totalPrestamos} préstamos en total`} onClick={() => onNavigate('prestamos')} />
             <StatCard icon="file" label="Solicitudes en curso" value={view.pendientes} hint="Pendientes y en revisión" onClick={() => onNavigate('solicitudes')} />
             <StatCard icon="bell" label="Sin leer" value={view.sinLeer} hint="Notificaciones nuevas" onClick={() => onNavigate('notificaciones')} />
+            <StatCard
+              icon="wallet"
+              label="Capital en cartera"
+              value={data.metricasCartera?.capitalColocado ?? 0}
+              hint="Capital pendiente de cobro"
+              formatValue={formatMoney}
+              onClick={() => onNavigate('prestamos')}
+            />
+            <StatCard
+              icon="chart"
+              label="PAR 30"
+              value={data.metricasCartera?.par30Porcentaje ?? 0}
+              hint={`Exposición ${formatMoney(data.metricasCartera?.exposicionPar30 ?? 0)}`}
+              formatValue={(value) => `${Number(value).toFixed(2)}%`}
+              onClick={() => onNavigate('cuotas')}
+            />
+            <StatCard
+              icon="wallet"
+              label="Cobrado hoy"
+              value={data.metricasCartera?.cobradoHoy ?? 0}
+              hint="Pagos registrados hoy (UTC)"
+              formatValue={formatMoney}
+              onClick={() => onNavigate('cuotas')}
+            />
+            <StatCard
+              icon="calendar"
+              label="Mora crítica"
+              value={data.metricasCartera?.prestamosMoraCritica ?? 0}
+              hint="Préstamos con cuotas vencidas por 30+ días"
+              onClick={() => onNavigate('cuotas')}
+            />
           </Stagger>
 
           <Card className="p-6">

@@ -7,7 +7,7 @@ import { createDesembolso, listDesembolsos } from '../services/dashboardApi.js'
 const createConfig = {
   label: 'Registrar desembolso',
   title: 'Registrar desembolso',
-  successMessage: 'Desembolso registrado y cuotas generadas.',
+  successMessage: 'Desembolso registrado y plan de amortización generado.',
   submit: createDesembolso,
   fields: [
     { name: 'prestamoId', label: 'Préstamo', type: 'select', required: true, loadOptions: prestamoOptions },

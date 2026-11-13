@@ -19,9 +19,10 @@ function validarImporteYPlazo(producto, montoSolicitado, plazoSolicitadoMeses) {
 
 export async function crearSolicitudCredito(req, res) {
     try {
-        const { clienteId, productoCreditoId, montoSolicitado, plazoSolicitadoMeses } = req.body ?? {};
+        const { clienteId, productoCreditoId, montoSolicitado, plazoSolicitadoMeses, destino } = req.body ?? {};
 
-        if (!clienteId || !productoCreditoId || !montoSolicitado ||!plazoSolicitadoMeses) {
+        if (!clienteId || !productoCreditoId || montoSolicitado === undefined ||
+            plazoSolicitadoMeses === undefined || destino === undefined) {
             return res.status(400).json({ message: 'Faltan campos requeridos' });
         }
         if (!mongoose.Types.ObjectId.isValid(clienteId) || !mongoose.Types.ObjectId.isValid(productoCreditoId)) {
@@ -32,6 +33,9 @@ export async function crearSolicitudCredito(req, res) {
         }
         if (typeof plazoSolicitadoMeses !== 'number' || !Number.isInteger(plazoSolicitadoMeses) || plazoSolicitadoMeses < 1) {
             return res.status(400).json({ message: 'El plazo debe ser un número entero de al menos un mes' });
+        }
+        if (typeof destino !== 'string' || !destino.trim() || destino.trim().length > 500) {
+            return res.status(400).json({ message: 'El destino debe ser texto no vacío de hasta 500 caracteres' });
         }
 
         const [cliente, producto] = await Promise.all([
@@ -49,6 +53,7 @@ export async function crearSolicitudCredito(req, res) {
             clienteId,
             productoCreditoId,
             montoSolicitado,
+            destino: destino.trim(),
             plazoSolicitadoMeses
         });
         return res.status(201).json({ message: 'Solicitud creada', solicitud });
@@ -116,12 +121,12 @@ export async function obtenerSolicitudCreditoPorId(req, res) {
 export async function actualizarSolicitudCredito(req, res) {
     try {
         const { id } = req.params;
-        const { montoSolicitado, plazoSolicitadoMeses } = req.body ?? {};
+        const { montoSolicitado, plazoSolicitadoMeses, destino } = req.body ?? {};
 
         if (!esObjectIdValido(id)) {
             return res.status(400).json({ message: 'El ID de la solicitud no es válido' });
         }
-        if (montoSolicitado === undefined && plazoSolicitadoMeses === undefined) {
+        if (montoSolicitado === undefined && plazoSolicitadoMeses === undefined && destino === undefined) {
             return res.status(400).json({ message: 'Indica al menos un campo que quieras actualizar' });
         }
 
@@ -149,6 +154,12 @@ export async function actualizarSolicitudCredito(req, res) {
                 return res.status(400).json({ message: 'El plazo debe ser un número entero de al menos un mes' });
             }
             cambios.plazoSolicitadoMeses = plazoSolicitadoMeses;
+        }
+        if (destino !== undefined) {
+            if (typeof destino !== 'string' || !destino.trim() || destino.trim().length > 500) {
+                return res.status(400).json({ message: 'El destino debe ser texto no vacío de hasta 500 caracteres' });
+            }
+            cambios.destino = destino.trim();
         }
 
         const producto = await productosCredito.getProductoCredito({ _id: solicitudActual.productoCreditoId.toString() });

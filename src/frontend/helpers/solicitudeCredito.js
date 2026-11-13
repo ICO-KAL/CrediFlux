@@ -16,6 +16,7 @@ export const createConfig = {
     { name: 'productoCreditoId', label: 'Producto de crédito', type: 'select', required: true, loadOptions: productoOptions },
     { name: 'montoSolicitado', label: 'Monto solicitado', type: 'number', min: 0.01, step: '0.01', required: true },
     { name: 'plazoSolicitadoMeses', label: 'Plazo (meses)', type: 'number', min: 1, step: '1', required: true },
+    { name: 'destino', label: 'Destino del dinero', type: 'textarea', required: true },
   ],
 }
 

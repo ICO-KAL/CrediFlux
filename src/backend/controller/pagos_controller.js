@@ -5,6 +5,7 @@ import '../models/cuota.js';
 import '../models/prestamo.js';
 import '../models/transaccion_financiera.js';
 import { esObjectId, responderError } from '../helpers/controlador.js';
+import { calcularPenalizacionMora } from '../helpers/mora.js';
 
 
 export async function registrarPago(req, res) {
@@ -65,23 +66,30 @@ export async function registrarPago(req, res) {
                 throw error;
             }
 
+            const prestamosPorId = new Map(prestamos.map((prestamo) => [prestamo._id.toString(), prestamo]));
+            const asignacionesConMora = [];
             for (const asignacion of asignaciones) {
                 const cuota = cuotas.find((item) => item._id.toString() === asignacion.cuotaId);
+                const prestamo = prestamosPorId.get(cuota.prestamoId.toString());
+                const montoPenalizacionMora = calcularPenalizacionMora(cuota, prestamo);
+                const montoEsperado = Math.round(cuota.montoTotal * 100) + Math.round(montoPenalizacionMora * 100);
                 if (Math.abs(cuota.montoTotal * 100 - Math.round(cuota.montoTotal * 100)) > 1e-8 ||
-                    Math.round(cuota.montoTotal * 100) !== Math.round(asignacion.montoAplicado * 100)) {
-                    const error = new Error('Este sistema requiere pagar cada cuota completa');
+                    montoEsperado !== Math.round(asignacion.montoAplicado * 100)) {
+                    const error = new Error('El pago debe cubrir la cuota completa y la penalización por mora aplicable');
                     error.status = 400;
                     throw error;
                 }
+                asignacionesConMora.push({ ...asignacion, montoPenalizacionMora });
             }
 
             [pagoCreado] = await mongoose.model('Pago').create([{
                 clienteId, montoTotal, metodoPago: metodoPago.trim(), referenciaExterna
             }], { session });
-            await mongoose.model('AsignacionPago').create(asignaciones.map((item) => ({
+            await mongoose.model('AsignacionPago').create(asignacionesConMora.map((item) => ({
                 pagoId: pagoCreado._id,
                 cuotaId: item.cuotaId,
-                montoAplicado: item.montoAplicado
+                montoAplicado: item.montoAplicado,
+                montoPenalizacionMora: item.montoPenalizacionMora
             })), { session });
 
             for (const item of cuotas) {
